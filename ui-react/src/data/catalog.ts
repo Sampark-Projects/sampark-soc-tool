@@ -1,0 +1,34 @@
+import raw from './dashboards.json'
+
+// Generated from the original OpenSearch Dashboards saved objects in dashboards/dashboards/*.json
+// (titles, visualization types, aggregation fields, saved-search queries and columns).
+export interface PanelDef {
+  title: string
+  vis: string
+  kind: 'terms' | 'time' | 'metric' | 'sankey' | 'tree' | 'filetree' | 'controls' | 'unsupported' | 'other'
+  fields: string[]
+  metric: string | null
+  metricField: string | null
+  filter: Record<string, string | string[]>
+  filterOk: boolean
+}
+export interface LogsDef {
+  title: string
+  columns: string[]
+  query: string | null
+  filter: Record<string, string | string[]>
+  ok: boolean
+}
+export interface DashboardDef {
+  id: string
+  title: string
+  slug: string
+  group: string
+  description: string
+  logs: LogsDef | null
+  panels: PanelDef[]
+}
+
+export const catalog = raw as unknown as { commonFields: string[]; dashboards: DashboardDef[] }
+export const groups = ['General', 'Protocols', 'ICS/IoT', 'Other']
+export const findDashboard = (slug?: string) => catalog.dashboards.find((d) => d.slug === slug)

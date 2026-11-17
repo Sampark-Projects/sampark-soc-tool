@@ -1,0 +1,58 @@
+import { useEffect, useState } from 'react'
+import { AppConfig, defaultConfig, loadConfig } from '../config'
+import PageHero from '../components/PageHero'
+
+// Account management is provided by the existing htadmin PHP app (third-party,
+// built into its own container). This page is the React front door to it; the
+// page names below match the links in htadmin/src/includes/nav.php.
+export default function Accounts() {
+  const [config, setConfig] = useState<AppConfig>(defaultConfig)
+  useEffect(() => {
+    loadConfig().then(setConfig)
+  }, [])
+
+  // htadmin only exists when the backend uses local (basic) accounts, where the link is /auth/. With LDAP,
+  // Keycloak or no authentication the link points somewhere else (documentation, Keycloak, ...), and
+  // appending htadmin page names to it would give broken URLs, so show a single tile instead.
+  const isHtadmin = /^\/auth\/?$/.test(config.authUrl)
+  const base = config.authUrl.endsWith('/') ? config.authUrl : `${config.authUrl}/`
+  const actions = isHtadmin
+    ? [
+        {
+          title: 'Administrator Login',
+          desc: 'Add, remove and edit local accounts and their permissions.',
+          href: `${base}admin_login.php`,
+        },
+        {
+          title: 'Account Self Service',
+          desc: 'Change your own password.',
+          href: `${base}selfservice.php`,
+        },
+      ]
+    : [
+        {
+          title: config.authTitle,
+          desc: 'Accounts are not managed locally in this authentication mode. Open the page that explains or manages them.',
+          href: config.authUrl,
+        },
+      ]
+
+  return (
+    <>
+      <PageHero icon="👤" title={config.authTitle} sub={config.authDesc} />
+      <div className="tile-grid">
+        {actions.map((a, i) => (
+          <div className="card tile" key={a.title} style={{ ['--c' as any]: i % 2 ? '#34d399' : '#38bdf8' }}>
+            <a className="tile-head" href={a.href}>
+              <h3>{a.title}</h3>
+            </a>
+            <p>{a.desc}</p>
+            <a className="btn" href={a.href}>
+              Open
+            </a>
+          </div>
+        ))}
+      </div>
+    </>
+  )
+}

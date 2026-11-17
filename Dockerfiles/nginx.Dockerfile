@@ -48,6 +48,14 @@ RUN --mount=type=secret,id=GITHUB_TOKEN,env=JEKYLL_GITHUB_TOKEN \
     find /site/_site -type f -name "*.html" -exec sed -i "s@/\(docs\|assets\)@/readme/\1@g" "{}" \; && \
     find /site/_site -type f -name "*.html" -exec sed -i 's@\(href=\)"/"@\1"/readme/"@g' "{}" \;
 
+# build the React UI (served at /ui/)
+FROM node:22-alpine AS uibuild
+WORKDIR /ui
+COPY ui-react/package*.json ./
+RUN npm ci || npm install
+COPY ui-react/ ./
+RUN npm run build
+
 # obtain openresty source code bundle from download site or Git
 FROM alpine:3.24 AS getresty
 
@@ -413,6 +421,7 @@ RUN set -eux; \
 COPY --from=docbuild /site/_site /usr/share/nginx/html/readme
 
 ADD nginx/landingpage /usr/share/nginx/html
+COPY --from=uibuild /ui/dist /usr/share/nginx/html/ui
 ADD --chmod=755 shared/bin/docker-uid-gid-setup.sh /usr/local/bin/
 ADD --chmod=755 container-health-scripts/nginx.sh /usr/local/bin/container_health.sh
 ADD nginx/scripts /usr/local/bin/

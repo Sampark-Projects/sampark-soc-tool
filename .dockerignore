@@ -56,3 +56,6 @@ netbox/custom-scripts
 zeek/custom
 logstash/maps/otkb_fixture.json
 filescan/python-filescan/filescan/strelka/proto/strelka_pb2*
+
+ui-react/node_modules
+ui-react/dist

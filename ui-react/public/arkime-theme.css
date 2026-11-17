@@ -1,0 +1,136 @@
+/* Sampark SOC Tool look for the Arkime pages (Sessions, SPI View, SPI Graph, Connections, Hunt, Files, Stats, History, ...).
+   Arkime is themed through CSS variables on <body>, so recolouring them restyles the whole app; the rules below add shape. */
+html body, html body[class] {
+  --sam-accent: #3b9eff;
+  --sam-accent-2: #818cf8;
+  --sam-panel: #18222e;
+  --sam-panel-2: #121c27;
+  --sam-border: #2a3744;
+  --sam-text: #e6edf3;
+  --sam-muted: #8b9bab;
+  --color-background: #0f1720;
+  --color-foreground: #e6edf3;
+  --color-foreground-accent: #ffffff;
+  --color-foreground-accent-dark: #dbe6f0;
+  --color-foreground-accent-light: #ffffff;
+  --color-white: #18222e;
+  --color-gray-dark: #f3f6fa;
+  --color-gray-darker: #e6edf3;
+  --color-gray: #c3cfdb;
+  --color-gray-light: #6f8296;
+  --color-gray-lighter: #2a3744;
+  --color-black: #ffffff;
+  --color-button: #ffffff;
+  --color-inputs: #121c27;
+  --color-primary: #2f86e0;
+  --color-primary-dark: #2470bf;
+  --color-primary-darker: #1b5a9c;
+  --color-primary-light: #4a9bf0;
+  --color-primary-lighter: #6cb0f6;
+  --color-primary-lightest: #17365a;
+  --color-secondary: #1fa37a;
+  --color-secondary-dark: #188463;
+  --color-secondary-darker: #126650;
+  --color-secondary-light: #2dbb90;
+  --color-secondary-lighter: #4fd1a8;
+  --color-secondary-lightest: #12302b;
+  --color-tertiary: #5ab0ff;
+  --color-tertiary-dark: #3f98ec;
+  --color-tertiary-darker: #2f80cf;
+  --color-tertiary-light: #7cc1ff;
+  --color-tertiary-lighter: #9dd0ff;
+  --color-tertiary-lightest: #1d4d7e;
+  --color-quaternary: #fbbf24;
+  --color-quaternary-dark: #e0a712;
+  --color-quaternary-darker: #bf8d0c;
+  --color-quaternary-light: #fcd05c;
+  --color-quaternary-lighter: #fddc86;
+  --color-quaternary-lightest: #2f2a19;
+  --color-water: #7fa8cf;
+  --color-land: #6d7f93;
+  --color-land-dark: #1f2b37;
+  --color-land-light: #b4c2d1;
+  --color-src: #ffe3e3;
+  --color-dst: #e2f6ff;
+}
+html[data-theme='light'] body, html[data-theme='light'] body[class] {
+  --sam-panel: #ffffff;
+  --sam-panel-2: #f1f5fa;
+  --sam-border: #d3dce6;
+  --sam-text: #17222d;
+  --sam-muted: #5a6b7d;
+  --color-background: #f3f6fa;
+  --color-foreground: #17222d;
+  --color-foreground-accent: #0b1620;
+  --color-foreground-accent-dark: #17222d;
+  --color-foreground-accent-light: #0b1620;
+  --color-white: #ffffff;
+  --color-gray-dark: #1f2d3a;
+  --color-gray-darker: #2c3c4b;
+  --color-gray: #5f7085;
+  --color-gray-light: #c7d2de;
+  --color-gray-lighter: #e6edf5;
+  --color-black: #0b1620;
+  --color-button: #ffffff;
+  --color-inputs: #ffffff;
+  --color-primary-lightest: #d9eafc;
+  --color-secondary-lightest: #d8f3ea;
+  --color-tertiary-lightest: #d8ecff;
+  --color-quaternary-lightest: #fdf3d0;
+  --color-water: #a9c7e3;
+  --color-land: #cfd8e2;
+  --color-land-dark: #8fa0b3;
+  --color-land-light: #e6ecf2;
+  --color-src: #7a1c1c;
+  --color-dst: #0c4a6e;
+}
+
+html body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; -webkit-font-smoothing: antialiased; background: var(--color-background); color: var(--color-foreground); }
+html body ::-webkit-scrollbar { width: 10px; height: 10px; }
+html body ::-webkit-scrollbar-thumb { background: var(--sam-border); border-radius: 99px; }
+html body ::-webkit-scrollbar-track { background: transparent; }
+html body a { color: var(--sam-accent); }
+
+/* ---- top bar ---- */
+html body nav.navbar.fixed-top { background: linear-gradient(90deg, color-mix(in srgb, var(--sam-panel) 92%, #000), color-mix(in srgb, var(--sam-panel) 82%, var(--sam-accent))) !important; border-bottom: 1px solid var(--sam-border); box-shadow: 0 2px 14px rgba(0,0,0,.25); }
+html body .navbar .nav-link { color: var(--sam-muted) !important; border-radius: 999px; padding: .15rem .7rem !important; margin: 0 .1rem; transition: background .15s, color .15s; }
+html body .navbar .nav-link:hover { color: var(--color-foreground-accent) !important; background: color-mix(in srgb, var(--sam-accent) 14%, transparent); }
+html body .navbar .nav-link.active, html body .navbar .nav-link.router-link-active { color: #fff !important; background: linear-gradient(135deg, var(--color-primary), var(--sam-accent-2)) !important; font-weight: 600; box-shadow: 0 2px 8px color-mix(in srgb, var(--sam-accent) 35%, transparent); }
+html body .navbar .arkime-logo { content: url('/ui/sampark-logo.png'); height: 26px !important; width: auto !important; background: #fff; border-radius: 6px; padding: 1px 7px; }
+html[data-theme='light'] body nav.navbar.fixed-top { background: linear-gradient(90deg, #ffffff, #eaf3fc) !important; box-shadow: 0 2px 10px rgba(20,40,70,.08); }
+html[data-theme='light'] body .navbar .nav-link.active, html[data-theme='light'] body .navbar .nav-link.router-link-active { color: #fff !important; }
+
+/* ---- search / time bars and controls ---- */
+html body .form-control, html body .form-select, html body .input-group-text { border-radius: 10px !important; border-color: var(--sam-border) !important; background-color: var(--color-inputs); color: var(--color-foreground); }
+html body .input-group > :first-child { border-top-right-radius: 0 !important; border-bottom-right-radius: 0 !important; }
+html body .input-group > :last-child { border-top-left-radius: 0 !important; border-bottom-left-radius: 0 !important; }
+html body .input-group-text { background: var(--sam-panel-2) !important; color: var(--sam-muted); }
+html body .form-control:focus, html body .form-select:focus { border-color: var(--sam-accent) !important; box-shadow: 0 0 0 3px color-mix(in srgb, var(--sam-accent) 25%, transparent) !important; }
+html body .btn { border-radius: 10px; transition: transform .12s, filter .12s, background .15s; }
+html body .btn:hover:not(:disabled) { filter: brightness(1.1); }
+html body .btn-theme-primary { background: linear-gradient(135deg, var(--color-primary), var(--sam-accent-2)) !important; border-color: transparent !important; color: #fff !important; }
+html body .btn-theme-secondary { background: linear-gradient(135deg, var(--color-secondary), var(--color-secondary-light)) !important; border-color: transparent !important; color: #fff !important; }
+html body .btn-theme-tertiary { background: linear-gradient(135deg, var(--color-tertiary-dark), var(--color-tertiary)) !important; border-color: transparent !important; color: #0b1620 !important; }
+
+/* ---- panels, tables, menus, dialogs ---- */
+html body .card, html body .modal-content, html body .dropdown-menu, html body .popover, html body .toast { background: var(--sam-panel); border: 1px solid var(--sam-border); border-radius: 14px; color: var(--color-foreground); }
+html body .dropdown-menu { padding: .3rem; box-shadow: 0 12px 30px rgba(0,0,0,.35); }
+html body .dropdown-item { border-radius: 8px; color: var(--color-foreground); }
+html body .dropdown-item:hover, html body .dropdown-item:focus { background: color-mix(in srgb, var(--sam-accent) 16%, transparent); color: var(--color-foreground-accent); }
+html body .tooltip-inner { background: var(--sam-panel-2); color: var(--sam-text); border: 1px solid var(--sam-border); border-radius: 8px; }
+html body table { border-color: var(--sam-border); }
+html body table thead th, html body .table thead th { background: var(--sam-panel-2) !important; color: var(--sam-muted); text-transform: uppercase; font-size: .7rem; letter-spacing: .05em; border-bottom: 1px solid var(--sam-border) !important; }
+html body table tbody tr:hover > td, html body .table-hover tbody tr:hover > * { background: color-mix(in srgb, var(--sam-accent) 8%, transparent) !important; }
+html body table td { border-color: var(--sam-border) !important; }
+html body .modal-header, html body .modal-footer { border-color: var(--sam-border); }
+html body hr { border-color: var(--sam-border); }
+html body .alert { border-radius: 12px; }
+html body .no-results, html body .info-area { border-radius: 14px; }
+
+/* ---- footer ---- */
+html body .footer { background: transparent; border-top: 1px solid var(--sam-border); color: var(--sam-muted); }
+html body .footer a { color: var(--sam-accent); }
+html body .sam-back { position: fixed; right: 14px; bottom: 36px; z-index: 1040; padding: .35rem .9rem; border-radius: 999px; background: linear-gradient(135deg, var(--color-primary), var(--sam-accent-2)); color: #fff !important; font-size: .8rem; text-decoration: none; box-shadow: 0 6px 18px rgba(0,0,0,.35); }
+html body .sam-back:hover { filter: brightness(1.1); }
+html body .sam-theme { position: fixed; right: 175px; bottom: 36px; z-index: 1040; padding: .35rem .9rem; border-radius: 999px; border: 1px solid var(--sam-border); background: var(--sam-panel); color: var(--sam-text); font-size: .8rem; cursor: pointer; box-shadow: 0 6px 18px rgba(0,0,0,.3); }
+html body .sam-theme:hover { border-color: var(--sam-accent); }
