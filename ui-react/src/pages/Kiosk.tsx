@@ -125,10 +125,10 @@ export default function Kiosk() {
             <div className="card">
               <h3>Captures</h3>
               <p>Latest PCAP: {bytes(stats.pcap)}</p>
-              <p>IDS/IPS/NSM Engine alerts/events: {stats.suricata.toLocaleString()}</p>
+              <p>ThreatGuard IDS alerts/events: {stats.suricata.toLocaleString()}</p>
             </div>
             <div className="card">
-              <h3>Top Traffic Monitoring logs</h3>
+              <h3>Top ProtocolInspector logs</h3>
               {Object.entries(stats.zeek).length === 0 && <p className="muted">No logs yet</p>}
               {Object.entries(stats.zeek).map(([k, v]) => (
                 <p key={k} className="row-between">

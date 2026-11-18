@@ -16,7 +16,7 @@ interface Tile {
   icon?: string
 }
 
-const FALLBACK: Record<string, string> = { 'threat hunting and data visualization': '📊', 'PCAP & Indexing': '🔍', 'Browser Decoder': '🧪', 'IRM/IPAM/DCIM': '🗺️' }
+const FALLBACK: Record<string, string> = { 'LogAnalytics Engine': '📊', 'PacketVault': '🔍', 'DataDecoder Workbench': '🧪', 'AssetRegistry': '🗺️' }
 
 // Product icon from the server's /assets/img when it exists, an emoji tile otherwise.
 function TileIcon({ img, icon }: { img?: string; icon: string }) {
@@ -31,20 +31,20 @@ function buildTiles(c: AppConfig): Tile[] {
     {
       href: `${UI}dashboards`,
       title: labelOf('OpenSearch')!,
-      img: `/assets/img/${c.dashboardsIcon}`,
+      icon: '📊',
       desc: '',
     },
     {
       href: `${UI}sessions`,
       title: labelOf('Arkime')!,
-      img: '/assets/img/arkime.svg',
+      icon: '🔍',
       desc: '',
     },
-    { href: `${UI}assets`, title: labelOf('NetBox')!, img: '/assets/img/netbox_icon.svg', desc: '' },
+    { href: `${UI}assets`, title: labelOf('NetBox')!, icon: '🗺️', desc: '' },
     {
-      href: '/arkime/cyberchef.html',
+      href: '/packetvault/cyberchef.html',
       title: labelOf('CyberChef')!,
-      img: '/assets/img/cyberchef.svg',
+      icon: '🧪',
       desc: '',
     },
     { href: '/readme/', title: 'Documentation', icon: '📖', desc: 'Read the user guide' },
@@ -54,7 +54,7 @@ function buildTiles(c: AppConfig): Tile[] {
       icon: '⬆️',
       desc: '',
     },
-    { href: c.authUrl, title: labelOf('Keycloak')!, icon: '👤', desc: '' },
+    { href: /^\/auth\/?$/.test(c.authUrl) ? `${UI}accounts` : c.authUrl, title: labelOf('Keycloak')!, icon: '👤', desc: '' },
     {
       href: `${UI}files`,
       title: labelOf('Strelka')!,

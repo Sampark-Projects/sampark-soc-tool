@@ -25,7 +25,7 @@ const TABS: Tab[] = [
     id: 'devices',
     label: 'Devices',
     path: '/netbox/api/dcim/devices/',
-    ui: '/netbox/dcim/devices/',
+    ui: '/assetregistry/dcim/devices/',
     columns: [
       { head: 'Name', cell: (r) => name(r.name ?? r.display) },
       { head: 'Role', cell: (r) => name(r.role ?? r.device_role) },
@@ -39,7 +39,7 @@ const TABS: Tab[] = [
     id: 'ips',
     label: 'IP Addresses',
     path: '/netbox/api/ipam/ip-addresses/',
-    ui: '/netbox/ipam/ip-addresses/',
+    ui: '/assetregistry/ipam/ip-addresses/',
     columns: [
       { head: 'Address', cell: (r) => name(r.address) },
       { head: 'Status', cell: (r) => name(r.status) },
@@ -52,7 +52,7 @@ const TABS: Tab[] = [
     id: 'prefixes',
     label: 'Prefixes',
     path: '/netbox/api/ipam/prefixes/',
-    ui: '/netbox/ipam/prefixes/',
+    ui: '/assetregistry/ipam/prefixes/',
     columns: [
       { head: 'Prefix', cell: (r) => name(r.prefix) },
       { head: 'Status', cell: (r) => name(r.status) },
@@ -65,7 +65,7 @@ const TABS: Tab[] = [
     id: 'sites',
     label: 'Sites',
     path: '/netbox/api/dcim/sites/',
-    ui: '/netbox/dcim/sites/',
+    ui: '/assetregistry/dcim/sites/',
     columns: [
       { head: 'Name', cell: (r) => name(r.name) },
       { head: 'Status', cell: (r) => name(r.status) },
@@ -118,7 +118,7 @@ export default function Assets() {
 
   return (
     <>
-      <PageHero icon="🗺️" title="Assets" sub="Devices, IP addresses, prefixes and sites tracked in IRM/IPAM/DCIM." href="/netbox/" linkLabel="Open full IRM/IPAM/DCIM ↗" />
+      <PageHero icon="🗺️" title="Assets" sub="Devices, IP addresses, prefixes and sites tracked in AssetRegistry." href="/assetregistry/" linkLabel="Open full AssetRegistry ↗" />
 
       <div className="tabs">
         {TABS.map((t) => (
@@ -148,7 +148,7 @@ export default function Assets() {
       {error &&
         (/HTTP (404|502|503)/.test(error) ? (
           <p className="err">
-            IRM/IPAM/DCIM does not seem to be running on this server ({error}). Check that it is enabled in its configuration and that its container is up.
+            AssetRegistry does not seem to be running on this server ({error}). Check that it is enabled in its configuration and that its container is up.
           </p>
         ) : (
           <p className="err">Could not load {tab.label.toLowerCase()}: {error}</p>
@@ -187,7 +187,7 @@ export default function Assets() {
                 <td>
                   <Link to={`/assets/${tab.id}/${r.id}`}>Details</Link>
                   {' · '}
-                  <a href={`${tab.ui}${r.id}/`}>IRM/IPAM/DCIM ↗</a>
+                  <a href={`${tab.ui}${r.id}/`}>AssetRegistry ↗</a>
                 </td>
               </tr>
             ))}

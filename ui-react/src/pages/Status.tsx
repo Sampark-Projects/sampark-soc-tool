@@ -2,6 +2,7 @@ import { labelOf } from '../data/components'
 import { useCallback, useEffect, useState } from 'react'
 import { getJSON } from '../api'
 import RangeSelect from '../components/RangeSelect'
+import { niceName } from '../lib/relabel'
 import { inRange } from '../lib/query'
 import PageHero from '../components/PageHero'
 
@@ -103,7 +104,7 @@ export default function Status() {
         {svc.map(([k, v]) => (
           <div key={k} className={`svc ${v ? 'up' : 'down'}`}>
             <i />
-            <span>{labelOf(k) ?? k}</span>
+            <span>{labelOf(k) ?? niceName(k)}</span>
             {essential.includes(k) && <em>required</em>}
             <b>{v ? 'running' : 'down'}</b>
           </div>
@@ -116,8 +117,8 @@ export default function Status() {
           {version.error && <p className="err small">Could not load: {version.error}</p>}
           {version.data && (
             <dl className="kv">
-              <dt>Sampark SOC Tool</dt><dd>{version.data.version}</dd>
-              <dt>Mode</dt><dd>{version.data.mode}</dd>
+              <dt>{labelOf('Malcolm')}</dt><dd>{version.data.version}</dd>
+              <dt>Mode</dt><dd>{niceName(String(version.data.mode ?? ""))}</dd>
               <dt>Built</dt><dd>{version.data.built}</dd>
               <dt>Started</dt><dd>{version.data.boot_time}</dd>
               <dt>Machine</dt><dd>{version.data.machine}</dd>
@@ -160,7 +161,7 @@ export default function Status() {
                 .sort((a, b) => String(b.index).localeCompare(String(a.index)))
                 .map((i) => (
                   <tr key={i.uuid ?? i.index}>
-                    <td>{i.index}</td>
+                    <td>{niceName(String(i.index))}</td>
                     <td><span className={`dot ${i.health}`} /> {i.health}</td>
                     <td>{i.status}</td>
                     <td>{Number(i['docs.count']).toLocaleString()}</td>

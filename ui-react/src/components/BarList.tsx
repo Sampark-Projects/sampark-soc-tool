@@ -1,4 +1,5 @@
 import { Donut, PALETTE } from './Charts'
+import { niceName } from '../lib/relabel'
 
 export interface Bucket {
   key: string | number
@@ -33,7 +34,7 @@ export default function BarList({
       {!loading && !error && buckets.length === 0 && <p className="muted">No data</p>}
       {asDonut && (
         <Donut
-          data={buckets.map((b) => ({ label: String(b.key), value: b.doc_count }))}
+          data={buckets.map((b) => ({ label: niceName(String(b.key)), value: b.doc_count }))}
           center={total >= 1e6 ? `${+(total / 1e6).toFixed(1)}M` : total >= 1000 ? `${+(total / 1000).toFixed(1)}k` : String(total)}
           sub="events"
           onSelect={onSelect}
@@ -47,7 +48,7 @@ export default function BarList({
                 <span className="bar-rank">{i + 1}</span>
                 <span className="bar-main">
                   <span className="bar-label" title={String(b.key)}>
-                    {String(b.key)}
+                    {niceName(String(b.key))}
                   </span>
                   <span className="bar-track">
                     <span className="bar-fill" style={{ width: `${Math.max(2, (b.doc_count / max) * 100)}%`, background: `linear-gradient(90deg, var(--dc, ${PALETTE[0]}), color-mix(in srgb, var(--dc, ${PALETTE[0]}) 45%, #818cf8))` }} />

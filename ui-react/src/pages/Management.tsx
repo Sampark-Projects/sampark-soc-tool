@@ -5,6 +5,7 @@ import { catalog } from '../data/catalog'
 import Overview from './ManagementOverview'
 import PageHero from '../components/PageHero'
 import RangeSelect from '../components/RangeSelect'
+import { niceName } from '../lib/relabel'
 import { inRange } from '../lib/query'
 import ManagementDashboards from './ManagementDashboards'
 
@@ -106,9 +107,9 @@ function SavedObjects({ type }: { type: 'dashboard' | 'visualization' | 'search'
               <tr key={o.id}>
                 <td>
                   {o.type === 'dashboard' ? (
-                    <Link to={catalog.dashboards.find((d) => d.id === o.id) ? `/dashboards/${catalog.dashboards.find((d) => d.id === o.id)!.slug}` : `/dashboards/saved/${encodeURIComponent(o.id)}`}>{o.attributes.title ?? o.id}</Link>
+                    <Link to={catalog.dashboards.find((d) => d.id === o.id) ? `/dashboards/${catalog.dashboards.find((d) => d.id === o.id)!.slug}` : `/dashboards/saved/${encodeURIComponent(o.id)}`}>{niceName(String(o.attributes.title ?? o.id))}</Link>
                   ) : (
-                    <Link to={`/management/${o.type}/${encodeURIComponent(o.id)}`}>{o.attributes.title ?? o.id}</Link>
+                    <Link to={`/management/${o.type}/${encodeURIComponent(niceName(o.id))}`}>{niceName(String(o.attributes.title ?? o.id))}</Link>
                   )}
                   {o.type === 'dashboard' && <> <Link className="muted small" to={`/management/dashboard/${encodeURIComponent(o.id)}`}>details</Link></>}
                 </td>
@@ -163,7 +164,7 @@ function Indices() {
           <tbody>
             {sorted.map((r) => (
               <tr key={r.index}>
-                <td>{r.index}</td>
+                <td>{niceName(String(r.index))}</td>
                 <td>{r.health}</td>
                 <td>{r.status}</td>
                 <td>{Number(r['docs.count'] ?? 0).toLocaleString()}</td>
@@ -209,7 +210,7 @@ function Fields() {
           <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
           <tbody>
             {rows.slice(0, 500).map(([k, v]) => (
-              <tr key={k}><td>{k}</td><td>{v.type ?? ''}</td><td className="muted small">{v.description ?? ''}</td></tr>
+              <tr key={k}><td>{niceName(k)}</td><td>{v.type ?? ''}</td><td className="muted small">{v.description ?? ''}</td></tr>
             ))}
           </tbody>
         </table>
@@ -299,7 +300,7 @@ function PluginList({ kind }: { kind: 'monitors' | 'detectors' | 'channels' | 'a
                   <tr key={r.id || i}>
                     <td>{r.id ? <Link to={`/management/plugin/${kind}/${encodeURIComponent(r.id)}`}>{r.name}</Link> : r.name}</td>
                     <td>{r.kind}</td>
-                    <td className="muted small">{r.detail}</td>
+                    <td className="muted small">{niceName(String(r.detail ?? ''))}</td>
                     <td>{r.state}</td>
                     <td className="muted small">{r.when}</td>
                   </tr>

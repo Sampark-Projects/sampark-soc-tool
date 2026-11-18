@@ -2,6 +2,8 @@ import { Routes, Route } from 'react-router-dom'
 import Layout from './components/Layout'
 import Upload from './pages/Upload'
 import Accounts from './pages/Accounts'
+import AccountLogin from './pages/AccountLogin'
+import AccountPassword from './pages/AccountPassword'
 import Kiosk from './pages/Kiosk'
 import Dashboards from './pages/Dashboards'
 import Sessions from './pages/Sessions'
@@ -46,6 +48,8 @@ export default function App() {
         <Route path="/files" element={<Files />} />
         <Route path="/upload" element={<Upload />} />
         <Route path="/accounts" element={<Accounts />} />
+        <Route path="/accounts/login" element={<AccountLogin />} />
+        <Route path="/accounts/password" element={<AccountPassword />} />
         <Route path="/kiosk" element={<Kiosk />} />
         <Route path="/management" element={<Management />} />
         <Route path="/management/plugin/:kind/:id" element={<PluginObject />} />

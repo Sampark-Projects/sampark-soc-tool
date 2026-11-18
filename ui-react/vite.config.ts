@@ -74,7 +74,7 @@ const arkimeProxy = {
       proxyRes.on('end', () => {
         const html = Buffer.concat(chunks).toString('utf8').replace(
           '</head>',
-          '<link rel="stylesheet" href="/ui/arkime-theme.css?v=3"><script src="/ui/arkime-theme.js?v=3"></script></head>',
+          '<link rel="stylesheet" href="/ui/arkime-theme.css?v=9"><script src="/ui/arkime-theme.js?v=9"></script></head>',
         )
         const out = Buffer.from(html, 'utf8')
         headers['content-length'] = String(out.length)
@@ -83,6 +83,79 @@ const arkimeProxy = {
       })
     })
   },
+}
+
+// Dev only: the sign-in / account pages under /auth get the same Sampark stylesheet and script (new names, theme, back link).
+const authProxy = {
+  ...base,
+  selfHandleResponse: true,
+  configure: (proxy: any) => {
+    proxy.on('proxyReq', (proxyReq: any) => proxyReq.setHeader('accept-encoding', 'identity'))
+    proxy.on('proxyRes', (proxyRes: any, _req: any, res: any) => {
+      const headers = { ...proxyRes.headers }
+      if (!/text\/html/.test(String(headers['content-type'] ?? ''))) {
+        res.writeHead(proxyRes.statusCode ?? 200, headers)
+        proxyRes.pipe(res)
+        return
+      }
+      const chunks: Buffer[] = []
+      proxyRes.on('data', (c: Buffer) => chunks.push(c))
+      proxyRes.on('end', () => {
+        // the product logo and tab icon are swapped here, before the page is sent, so the old ones never show
+        const html = Buffer.concat(chunks).toString('utf8').replace(/\/auth\/(malcolm-icon\.svg|favicon\.ico)/g, '/ui/sampark-logo.png')
+        const out = Buffer.from(
+          /<\/head>/i.test(html)
+            ? html.replace(/<\/head>/i, '<link rel="stylesheet" href="/ui/arkime-theme.css?v=9"><script src="/ui/arkime-theme.js?v=9"></script></head>')
+            : html,
+          'utf8',
+        )
+        headers['content-length'] = String(out.length)
+        delete headers.etag
+        res.writeHead(proxyRes.statusCode ?? 200, headers)
+        res.end(out)
+      })
+    })
+  },
+}
+
+// Dev only: the same public addresses the server gets from nginx. /packetvault is the Arkime app (served at /arkime) and
+// /assetregistry is NetBox (served at /netbox): the request path is mapped back, and the pages that come back are
+// rewritten so every link and API call stays under the new address.
+function aliasProxy(alias: string, real: string, inject: boolean) {
+  const out = new RegExp(`/${real}(?![A-Za-z0-9_-])`, 'g')
+  const outEsc = new RegExp(`\\\\/${real}(?![A-Za-z0-9_-])`, 'g')
+  return {
+    ...base,
+    rewrite: (p: string) => p.replace(new RegExp(`^/${alias}`), `/${real}`),
+    selfHandleResponse: true,
+    configure: (proxy: any) => {
+      proxy.on('proxyReq', (proxyReq: any) => proxyReq.setHeader('accept-encoding', 'identity'))
+      proxy.on('proxyRes', (proxyRes: any, _req: any, res: any) => {
+        const headers = { ...proxyRes.headers }
+        if (typeof headers.location === 'string') headers.location = headers.location.replace(out, `/${alias}`)
+        if (Array.isArray(headers['set-cookie'])) headers['set-cookie'] = headers['set-cookie'].map((c: string) => c.replace(new RegExp(`Path=/${real}`, 'i'), `Path=/${alias}`))
+        const type = String(headers['content-type'] ?? '')
+        if (!/text\/html|javascript|json|text\/css|text\/plain/.test(type)) {
+          res.writeHead(proxyRes.statusCode ?? 200, headers)
+          proxyRes.pipe(res)
+          return
+        }
+        const chunks: Buffer[] = []
+        proxyRes.on('data', (c: Buffer) => chunks.push(c))
+        proxyRes.on('end', () => {
+          let body = Buffer.concat(chunks).toString('utf8').replace(outEsc, `\\/${alias}`).replace(out, `/${alias}`)
+          if (inject && /text\/html/.test(type)) {
+            body = body.replace('</head>', '<link rel="stylesheet" href="/ui/arkime-theme.css?v=9"><script src="/ui/arkime-theme.js?v=9"></script></head>')
+          }
+          const buf = Buffer.from(body, 'utf8')
+          headers['content-length'] = String(buf.length)
+          delete headers.etag
+          res.writeHead(proxyRes.statusCode ?? 200, headers)
+          res.end(buf)
+        })
+      })
+    },
+  }
 }
 
 export default defineConfig({
@@ -94,9 +167,12 @@ export default defineConfig({
     // HTTP Basic auth to every proxied request, so no browser login prompt is needed.
     proxy: {
       ...Object.fromEntries(
-        ['/mapi', '/upload', '/auth', '/netbox', '/extracted-files', '/readme', '/update', '/script_call'].map((p) => [p, base]),
+        ['/mapi', '/upload', '/netbox', '/extracted-files', '/readme', '/update', '/script_call'].map((p) => [p, base]),
       ),
+      '/auth': authProxy,
       '/arkime': arkimeProxy,
+      '/packetvault': aliasProxy('packetvault', 'arkime', true),
+      '/assetregistry': aliasProxy('assetregistry', 'netbox', false),
       '/dashboards': dashboardsProxy,
     },
   },

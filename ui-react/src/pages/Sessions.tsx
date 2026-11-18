@@ -52,7 +52,7 @@ function PacketView({ row }: { row: Row }) {
             </label>
           </>
         )}
-        <a className="link-out" href={`/arkime/api/session/${encodeURIComponent(node)}/${encodeURIComponent(id)}/pcap`}>
+        <a className="link-out" href={`/packetvault/api/session/${encodeURIComponent(node)}/${encodeURIComponent(id)}/pcap`}>
           Download PCAP ↓
         </a>
       </div>
@@ -109,7 +109,7 @@ export default function Sessions() {
 
   return (
     <>
-      <PageHero icon="📡" title="Sessions" sub="Search captured network sessions and open the packets behind them." href="/arkime/" linkLabel="Open full PCAP & Indexing ↗" />
+      <PageHero icon="📡" title="Sessions" sub="Search captured network sessions and open the packets behind them." href="/packetvault/" linkLabel="Open full PacketVault ↗" />
 
       <form className="toolbar card" onSubmit={submit}>
         <input
@@ -208,9 +208,9 @@ export default function Sessions() {
               {selected.id && (
                 <a
                   className="btn"
-                  href={`/arkime/sessions?expression=${encodeURIComponent(`id == ${selected.id}`)}`}
+                  href={`/packetvault/sessions?expression=${encodeURIComponent(`id == ${selected.id}`)}`}
                 >
-                  Packets in Arkime ↗
+                  Packets in PacketVault ↗
                 </a>
               )}
               <button className="btn" onClick={() => setSelected(null)}>

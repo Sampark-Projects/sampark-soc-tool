@@ -62,12 +62,12 @@ export default function ArkimeSettings() {
 
   return (
     <>
-      <PageHero icon="⚙️" title="PCAP & Indexing settings" sub="Display preferences for the viewer, applied to your user." href="/arkime/settings" linkLabel="All settings ↗" />
+      <PageHero icon="⚙️" title="PacketVault settings" sub="Display preferences for the viewer, applied to your user." href="/packetvault/settings" linkLabel="All settings ↗" />
       {error && (
         <p className="err">
           {error}{' '}
-          <a href="/arkime/settings" className="link-out">
-            Change it in Arkime ↗
+          <a href="/packetvault/settings" className="link-out">
+            Change it in PacketVault ↗
           </a>
         </p>
       )}

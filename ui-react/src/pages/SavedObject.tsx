@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { savedObject } from '../api'
 import { catalog } from '../data/catalog'
 import PageHero from '../components/PageHero'
+import { niceName, realId } from '../lib/relabel'
 
 // Local detail view of a saved object (dashboard, visualization, saved search, index pattern).
 const parse = (s: unknown): any => {
@@ -28,7 +29,8 @@ async function titlesOf(refs: { type: string; id: string }[]): Promise<Record<st
 }
 
 export default function SavedObject() {
-  const { type = '', id = '' } = useParams()
+  const { type = '', id: shown = '' } = useParams()
+  const id = realId(shown)
   const [obj, setObj] = useState<any>(null)
   const [names, setNames] = useState<Record<string, string>>({})
   const [error, setError] = useState<string | null>(null)
@@ -69,13 +71,13 @@ export default function SavedObject() {
 
   return (
     <>
-      <PageHero icon="📦" title={a.title ?? id} sub={`Saved ${type}`} to="/management" linkLabel="← Back to Management" />
+      <PageHero icon="📦" title={niceName(String(a.title ?? id))} sub={`Saved ${type}`} to="/management" linkLabel="← Back to Management" />
       {error && <p className="err">Could not load this object: {error}</p>}
       {!obj && !error && <p className="muted">Loading…</p>}
       {obj && (
         <>
           <p className="muted small">
-            {type} · {obj.updated_at ? `updated ${new Date(obj.updated_at).toLocaleString()}` : ''} · id {id}
+            {type} · {obj.updated_at ? `updated ${new Date(obj.updated_at).toLocaleString()}` : ''} · id {niceName(id)}
           </p>
           {a.description && <p>{a.description}</p>}
 
@@ -84,7 +86,7 @@ export default function SavedObject() {
               <p><Link to={local ? `/dashboards/${local.slug}` : `/dashboards/saved/${encodeURIComponent(id)}`}>Open this dashboard</Link></p>
               <h3>Panels ({panels.length})</h3>
               <ul>
-                {panels.map((p: any, i: number) => <li key={i}>{panelTitle(p)}</li>)}
+                {panels.map((p: any, i: number) => <li key={i}>{niceName(String(panelTitle(p)))}</li>)}
               </ul>
             </div>
           )}
@@ -108,7 +110,7 @@ export default function SavedObject() {
             <div className="card">
               <h3>Saved search</h3>
               <p>Query: <code>{queryText || '(none)'}</code></p>
-              <p>Columns: {(a.columns ?? []).join(', ') || '(default)'}</p>
+              <p>Columns: {niceName((a.columns ?? []).join(', ')) || '(default)'}</p>
               <p>Sorted by: {(a.sort ?? []).map((s: any) => s.join(' ')).join(', ') || '(default)'}</p>
               <p><Link to={`/explorer?cols=${encodeURIComponent((a.columns ?? []).join(','))}`}>Explore these events</Link></p>
             </div>
@@ -135,7 +137,7 @@ export default function SavedObject() {
               <ul>
                 {refs.map((r, i) => (
                   <li key={i}>
-                    <Link to={`/management/${r.type}/${encodeURIComponent(r.id)}`}>{names[`${r.type}:${r.id}`] ?? r.id}</Link> <span className="muted small">({r.type})</span>
+                    <Link to={`/management/${r.type}/${encodeURIComponent(niceName(r.id))}`}>{niceName(String(names[`${r.type}:${r.id}`] ?? r.id))}</Link> <span className="muted small">({r.type})</span>
                   </li>
                 ))}
               </ul>

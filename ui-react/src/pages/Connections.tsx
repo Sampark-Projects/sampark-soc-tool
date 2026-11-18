@@ -136,7 +136,7 @@ export default function Connections() {
 
   return (
     <>
-      <PageHero icon="🕸️" title="Connections" sub="See who talks to whom, as a live graph of your network traffic." href="/arkime/connections" linkLabel="Open PCAP & Indexing view ↗" />
+      <PageHero icon="🕸️" title="Connections" sub="See who talks to whom, as a live graph of your network traffic." href="/packetvault/connections" linkLabel="Open PacketVault view ↗" />
 
       <div className="ov-kpis">
         <div className="ov-kpi" style={{ ['--c' as any]: SRC }}><span className="ov-kpi-label">Nodes</span><span className="ov-kpi-value">{nodes.length}</span><span className="ov-kpi-hint">{pair.a.split('.').pop()} / {pair.b.split('.').pop()} values</span></div>

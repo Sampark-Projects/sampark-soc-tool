@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { formatBytes, getJSON, osProxy } from '../api'
 import { catalog } from '../data/catalog'
 import RangeSelect from '../components/RangeSelect'
+import { niceName } from '../lib/relabel'
 import { rangeLabel, rangeParams, resolveRange } from '../lib/query'
 
 // Management > Overview: a single-screen summary of the server, built only from live API reads.
@@ -269,7 +270,7 @@ export default function Overview({ onTab }: { onTab: (t: any) => void }) {
       .then((x) => alive && setTotal(typeof x?.total === 'object' && x.total ? x.total.value : (x?.total ?? 0)))
       .catch(() => undefined)
     getJSON('/mapi/agg/event.dataset', { from, to: toSec, limit: 8 })
-      .then((x) => alive && setDatasets((x?.['event.dataset']?.buckets ?? []).map((b: any) => ({ label: String(b.key), value: b.doc_count }))))
+      .then((x) => alive && setDatasets((x?.['event.dataset']?.buckets ?? []).map((b: any) => ({ label: niceName(String(b.key)), value: b.doc_count }))))
       .catch(() => undefined)
     return () => {
       alive = false
@@ -280,7 +281,7 @@ export default function Overview({ onTab }: { onTab: (t: any) => void }) {
     const m = new Map<string, number>()
     for (const r of indices) m.set(family(String(r.index)), (m.get(family(String(r.index))) ?? 0) + (Number(r['docs.count']) || 0))
     const all = [...m.entries()].filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1])
-    const top = all.slice(0, 6).map(([label, value]) => ({ label, value }))
+    const top = all.slice(0, 6).map(([label, value]) => ({ label: niceName(label), value }))
     const rest = all.slice(6).reduce((a, [, v]) => a + v, 0)
     if (rest) top.push({ label: 'others', value: rest })
     return top
@@ -288,7 +289,7 @@ export default function Overview({ onTab }: { onTab: (t: any) => void }) {
   const docs = indices.reduce((a, r) => a + (Number(r['docs.count']) || 0), 0)
   const bytes = indices.reduce((a, r) => a + parseSize(r['store.size']), 0)
   const biggest = useMemo(
-    () => [...indices].map((r) => ({ label: String(r.index), value: parseSize(r['store.size']) })).sort((a, b) => b.value - a.value).slice(0, 7),
+    () => [...indices].map((r) => ({ label: niceName(String(r.index)), value: parseSize(r['store.size']) })).sort((a, b) => b.value - a.value).slice(0, 7),
     [indices],
   )
   const status = String(health?.status ?? '').toLowerCase()
@@ -304,7 +305,7 @@ export default function Overview({ onTab }: { onTab: (t: any) => void }) {
         <div>
           <h2>Server overview</h2>
           <p>
-            {version?.mode ? `${version.mode} mode` : 'Live server'}
+            {version?.mode ? `${niceName(String(version.mode))} mode` : 'Live server'}
             {health?.cluster_name ? ` · cluster ${health.cluster_name}` : ''}
             {health?.number_of_nodes ? ` · ${health.number_of_nodes} node${health.number_of_nodes > 1 ? 's' : ''}` : ''}
             {health?.active_shards ? ` · ${health.active_shards} shards` : ''}

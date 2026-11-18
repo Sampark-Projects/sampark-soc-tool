@@ -17,7 +17,7 @@ const links = [
   { to: '/management', label: 'Management' },
   { to: '/console', label: 'Console' },
   { to: '/upload', label: 'Upload' },
-  { to: '/accounts', label: 'AD/LDAP' },
+  { to: '/accounts', label: 'IdentityGateway' },
   { to: '/kiosk', label: 'Kiosk' },
   { to: '/status', label: 'Status' },
 ]

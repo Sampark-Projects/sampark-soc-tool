@@ -41,7 +41,7 @@ export default function Spiview() {
 
   return (
     <>
-      <PageHero icon="🧭" title="SPI View" sub="Break traffic down by protocol, port, country and more — click any value to filter." href="/arkime/spiview" linkLabel="Open PCAP & Indexing SPI View ↗" />
+      <PageHero icon="🧭" title="SPI View" sub="Break traffic down by protocol, port, country and more — click any value to filter." href="/packetvault/spiview" linkLabel="Open PacketVault SPI View ↗" />
       <div className="toolbar card">
         <RangeSelect value={range} onChange={setRange} />
         <div className="tabs">

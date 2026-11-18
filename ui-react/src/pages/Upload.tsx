@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import PageHero from '../components/PageHero'
+import { niceName } from '../lib/relabel'
 
 // Existing PHP endpoint (file-upload/php/submit.php) is served by nginx under /upload/.
 const SUBMIT_URL = '/upload/server/php/submit.php'
@@ -129,13 +130,13 @@ export default function Upload() {
 
   return (
     <section className="card upload">
-      <PageHero icon="⬆️" title="Artifact Upload" sub="Upload PCAP files, archived Traffic Monitoring logs, or other supported analysis artifacts." />
+      <PageHero icon="⬆️" title="Artifact Upload" sub="Upload PCAP files, archived ProtocolInspector logs, or other supported analysis artifacts." />
 
       <div className="upload-options">
         <TagInput tags={tags} onChange={setTags} />
         {sites.length > 0 && (
-          <select value={site} onChange={(e) => setSite(e.target.value)} aria-label="IRM/IPAM/DCIM site" title="IRM/IPAM/DCIM site">
-            <option value="0">No IRM/IPAM/DCIM Enrichment</option>
+          <select value={site} onChange={(e) => setSite(e.target.value)} aria-label="AssetRegistry site" title="AssetRegistry site">
+            <option value="0">No AssetRegistry Enrichment</option>
             {sites.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.text}
@@ -194,7 +195,7 @@ export default function Upload() {
           <div className="readiness-details">
             {Object.entries(ready).map(([k, v]) => (
               <div key={k}>
-                <span>{k}</span>
+                <span>{niceName(k)}</span>
                 <span>{v ? '✅' : '❌'}</span>
               </div>
             ))}

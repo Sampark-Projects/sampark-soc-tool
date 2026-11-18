@@ -41,7 +41,7 @@ export default function Statistics() {
 
   return (
     <>
-      <PageHero icon="📈" title="Statistics" sub="Capture-node health: sessions, packet rates, drops and free disk space." href="/arkime/stats" linkLabel="Open PCAP & Indexing Stats ↗">
+      <PageHero icon="📈" title="Statistics" sub="Capture-node health: sessions, packet rates, drops and free disk space." href="/packetvault/stats" linkLabel="Open PacketVault Stats ↗">
         <RangeSelect value={range} onChange={setRange} label="Nodes reported within" />
         <label className="muted small">
           <input type="checkbox" checked={auto} onChange={(e) => setAuto(e.target.checked)} /> Auto-refresh (15 s)

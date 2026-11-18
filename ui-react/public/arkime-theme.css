@@ -1,3 +1,5 @@
+/* the original tool logo stays hidden until the script has swapped in the Sampark logo, so it never flashes */
+.navbar-brand img:not(.sam-logo), img[src*="alcolm" i]:not(.sam-logo) { visibility: hidden; }
 /* Sampark SOC Tool look for the Arkime pages (Sessions, SPI View, SPI Graph, Connections, Hunt, Files, Stats, History, ...).
    Arkime is themed through CSS variables on <body>, so recolouring them restyles the whole app; the rules below add shape. */
 html body, html body[class] {

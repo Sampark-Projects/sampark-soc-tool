@@ -5,21 +5,40 @@
     var t = localStorage.getItem('sampark-theme')
     document.documentElement.setAttribute('data-theme', t === 'light' ? 'light' : 'dark')
   } catch (e) {}
-  var LABELS = { 'arkime.com': 'PCAP & Indexing', 'Dashboards': 'threat hunting and data visualization', 'NetBox': 'IRM/IPAM/DCIM', 'Sampark SOC Tool': 'network traffic analysis suite' }
+  // product name -> the name shown to users (same table as the React app)
+  var NAMES = [['Arkime', 'PacketVault'], ['Moloch', 'PacketVault'], ['Zeek', 'ProtocolInspector'], ['Suricata', 'ThreatGuard IDS'], ['Hedgehog Linux', 'EdgeSensor OS'], ['OpenSearch', 'LogAnalytics Engine'], ['CyberChef', 'DataDecoder Workbench'], ['Vega', 'GraphStudio'], ['Filebeat', 'LogCollector'], ['Fluent Bit', 'StreamRouter'], ['NetBox', 'AssetRegistry'], ['Valkey', 'FastCache Store'], ['GeoLite2', 'GeoMapper'], ['Strelka', 'FileExtractor'], ['YARA', 'SignatureMatcher'], ['Capa', 'BehaviorAnalyzer'], ['ClamAV', 'MalwareScanner'], ['FilePond', 'ArtifactUploader'], ['Keycloak', 'IdentityGateway'], ['Malcolm', 'NetSight Core']]
+  var LABELS = { 'arkime.com': 'PacketVault', 'Dashboards': 'LogAnalytics Engine', 'NetBox': 'AssetRegistry' }
+  var ALT = NAMES.map(function (m) { return m[0].replace(/ /g, '[ _]') }).join('|')
+  var RE = new RegExp('(?<![A-Za-z0-9])(' + ALT + ')(?![A-Za-z0-9])', 'gi')
+  var HAS = new RegExp('(?<![A-Za-z0-9])(' + ALT + ')(?![A-Za-z0-9])|arkime\\.com|Dashboards', 'i')
+  function nice(v) {
+    v = v.split('arkime.com').join('PacketVault').split('Dashboards').join('LogAnalytics Engine')
+    return v.replace(RE, function (m) {
+      var k = m.replace(/_/g, ' ').toLowerCase()
+      var hit = NAMES.filter(function (x) { return x[0].toLowerCase() === k })[0]
+      if (!hit) return m
+      return m === m.toLowerCase() ? hit[1].toLowerCase().replace(/ /g, '_') : hit[1]
+    })
+  }
   function relabel() {
-    var map = [['arkime.com', 'PCAP & Indexing'], ['Dashboards', 'threat hunting and data visualization'], ['NetBox', 'IRM/IPAM/DCIM'], ['Arkime', 'PCAP & Indexing']]
     var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null)
     var n
     while ((n = w.nextNode())) {
       var v = n.nodeValue
-      if (!v || !/Arkime|arkime\.com|NetBox|Dashboards/.test(v)) continue
-      var p = n.parentNode && n.parentNode.nodeName
-      if (p === 'SCRIPT' || p === 'STYLE' || p === 'TEXTAREA' || p === 'INPUT') continue
-      var o = v
-      map.forEach(function (m) { o = o.split(m[0]).join(m[1]) })
+      if (!v || !HAS.test(v)) continue
+      var pe = n.parentElement
+      var p = pe && pe.nodeName
+      if (p === 'SCRIPT' || p === 'STYLE' || p === 'TEXTAREA' || p === 'INPUT' || p === 'PRE' || p === 'CODE') continue
+      var o = nice(v)
       if (o !== v) n.nodeValue = o
     }
-    if (/Arkime/.test(document.title)) document.title = document.title.replace(/Arkime/g, 'PCAP & Indexing')
+    document.querySelectorAll('[title],[aria-label],[placeholder]').forEach(function (e) {
+      ;['title', 'aria-label', 'placeholder'].forEach(function (a) {
+        var v = e.getAttribute(a)
+        if (v && HAS.test(v)) e.setAttribute(a, nice(v))
+      })
+    })
+    if (HAS.test(document.title)) document.title = nice(document.title)
   }
   function fix() {
     if (document.body) relabel()
@@ -33,12 +52,29 @@
       })
     }
     document.querySelectorAll('.footer a').forEach(function (a) {
-      if (/Malc.?.?lm/i.test(a.textContent || '')) {
-        a.textContent = 'Sampark SOC Tool 📄'
-        a.setAttribute('href', '/ui/')
+      if (/Malc.?.?lm|NetSight Core/i.test(a.textContent || '')) {
+        if (a.textContent !== 'NetSight Core 📄') a.textContent = 'NetSight Core 📄'
+        if (a.getAttribute('href') !== '/ui/') a.setAttribute('href', '/ui/')
       }
       if (a.getAttribute('href') === '/dashboards/') a.setAttribute('href', '/ui/dashboards')
     })
+    // product logo: replace the original tool logo (navbar brand, login pages, favicon) with the Sampark logo
+    var LOGO = '/ui/sampark-logo.png'
+    var imgs = document.querySelectorAll('.navbar-brand img, a.brand img, img[src*="alcolm" i], img[src*="logo" i]')
+    for (var i = 0; i < imgs.length; i++) {
+      var im = imgs[i]
+      var cur = im.getAttribute('src') || ''
+      if (im.closest('.sam-back, .sam-theme')) continue
+      if (cur === LOGO || /sampark/i.test(cur)) { im.classList.add('sam-logo'); continue }
+      im.setAttribute('src', LOGO)
+      im.removeAttribute('srcset')
+      im.classList.add('sam-logo')
+      im.style.objectFit = 'contain'
+      im.style.height = '40px'
+      im.style.width = 'auto'
+    }
+    var ic = document.querySelectorAll('link[rel~="icon"]')
+    for (var j = 0; j < ic.length; j++) if (ic[j].getAttribute('href') !== LOGO) { ic[j].setAttribute('href', LOGO); ic[j].removeAttribute('type') }
     if (!document.querySelector('.sam-theme') && document.body) {
       var t = document.createElement('button')
       t.className = 'sam-theme'
@@ -61,6 +97,9 @@
       document.body.appendChild(b)
     }
   }
-  new MutationObserver(fix).observe(document.documentElement, { childList: true, subtree: true })
-  document.addEventListener('DOMContentLoaded', fix)
+  // run once the page has settled; fix() changes nothing when there is nothing left to change, so this always stops
+  var timer = null
+  var safeFix = function () { if (timer) return; timer = setTimeout(function () { timer = null; fix() }, 60) }
+  new MutationObserver(safeFix).observe(document.documentElement, { childList: true, subtree: true })
+  document.addEventListener('DOMContentLoaded', safeFix)
 })()

@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
+import { Link } from 'react-router-dom'
 import { AppConfig, defaultConfig, loadConfig } from '../config'
 import PageHero from '../components/PageHero'
 import { labelOf } from '../data/components'
@@ -17,18 +18,17 @@ export default function Accounts() {
   // appending htadmin page names to it would give broken URLs, so show a single tile instead.
   const label = labelOf('Keycloak') ?? config.authTitle
   const isHtadmin = /^\/auth\/?$/.test(config.authUrl)
-  const base = config.authUrl.endsWith('/') ? config.authUrl : `${config.authUrl}/`
   const actions = isHtadmin
     ? [
         {
           title: 'Administrator Login',
           desc: 'Add, remove and edit local accounts and their permissions.',
-          href: `${base}admin_login.php`,
+          href: '/accounts/login',
         },
         {
           title: 'Account Self Service',
           desc: 'Change your own password.',
-          href: `${base}selfservice.php`,
+          href: '/accounts/password',
         },
       ]
     : [
@@ -45,16 +45,29 @@ export default function Accounts() {
       <div className="tile-grid">
         {actions.map((a, i) => (
           <div className="card tile" key={a.title} style={{ ['--c' as any]: i % 2 ? '#34d399' : '#38bdf8' }}>
-            <a className="tile-head" href={a.href}>
+            <Wrap href={a.href} className="tile-head">
               <h3>{a.title}</h3>
-            </a>
+            </Wrap>
             <p>{a.desc}</p>
-            <a className="btn" href={a.href}>
+            <Wrap href={a.href} className="btn">
               Open
-            </a>
+            </Wrap>
           </div>
         ))}
       </div>
     </>
+  )
+}
+
+// pages of this app open through the router, anything else (another authentication mode) as a normal link
+function Wrap({ href, className, children }: { href: string; className: string; children: ReactNode }) {
+  return href.startsWith('/accounts') ? (
+    <Link className={className} to={href}>
+      {children}
+    </Link>
+  ) : (
+    <a className={className} href={href}>
+      {children}
+    </a>
   )
 }

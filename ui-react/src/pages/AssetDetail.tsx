@@ -6,10 +6,10 @@ import PageHero from '../components/PageHero'
 
 // Detail view for a NetBox object (device, IP address, prefix, site) with edit/delete of the simple fields.
 const KINDS: Record<string, { label: string; api: string; ui: string; tab: string }> = {
-  devices: { label: 'Device', api: '/netbox/api/dcim/devices/', ui: '/netbox/dcim/devices/', tab: 'devices' },
-  ips: { label: 'IP address', api: '/netbox/api/ipam/ip-addresses/', ui: '/netbox/ipam/ip-addresses/', tab: 'ips' },
-  prefixes: { label: 'Prefix', api: '/netbox/api/ipam/prefixes/', ui: '/netbox/ipam/prefixes/', tab: 'prefixes' },
-  sites: { label: 'Site', api: '/netbox/api/dcim/sites/', ui: '/netbox/dcim/sites/', tab: 'sites' },
+  devices: { label: 'Device', api: '/netbox/api/dcim/devices/', ui: '/assetregistry/dcim/devices/', tab: 'devices' },
+  ips: { label: 'IP address', api: '/netbox/api/ipam/ip-addresses/', ui: '/assetregistry/ipam/ip-addresses/', tab: 'ips' },
+  prefixes: { label: 'Prefix', api: '/netbox/api/ipam/prefixes/', ui: '/assetregistry/ipam/prefixes/', tab: 'prefixes' },
+  sites: { label: 'Site', api: '/netbox/api/dcim/sites/', ui: '/assetregistry/dcim/sites/', tab: 'sites' },
 }
 
 // Fields that are noise in a quick-look view.
@@ -123,7 +123,7 @@ export default function AssetDetail() {
       const forbidden = err?.status === 403
       setSaveError(
         forbidden
-          ? `IRM/IPAM/DCIM refused the change (${err.message}). Your user may not have permission to edit this, or the page needs a fresh load — try opening it in IRM/IPAM/DCIM.`
+          ? `AssetRegistry refused the change (${err.message}). Your user may not have permission to edit this, or the page needs a fresh load — try opening it in AssetRegistry.`
           : err.message ?? String(err),
       )
     } finally {
@@ -133,7 +133,7 @@ export default function AssetDetail() {
 
   const remove = async () => {
     if (!k) return
-    if (!window.confirm(`Delete this ${k.label.toLowerCase()} from IRM/IPAM/DCIM? This cannot be undone.`)) return
+    if (!window.confirm(`Delete this ${k.label.toLowerCase()} from AssetRegistry? This cannot be undone.`)) return
     setSaveError(null)
     try {
       await netboxWrite('DELETE', `${k.api}${encodeURIComponent(id)}/`)
@@ -156,7 +156,7 @@ export default function AssetDetail() {
       <div className="crumbs">
         <Link to={`/assets?tab=${k.tab}`}>Assets</Link> / {k.label}
       </div>
-      <PageHero icon="🗺️" title={title} sub={k.label} href={`${k.ui}${id}/`} linkLabel="Open IRM/IPAM/DCIM ↗" />
+      <PageHero icon="🗺️" title={title} sub={k.label} href={`${k.ui}${id}/`} linkLabel="Open AssetRegistry ↗" />
       {error && <p className="err">Could not load: {error}</p>}
       {data && !editing && fields.length > 0 && (
         <div className="toolbar">
@@ -173,7 +173,7 @@ export default function AssetDetail() {
         <p className="err">
           {saveError}{' '}
           <a href={`${k.ui}${id}/edit/`} className="link-out">
-            Edit in IRM/IPAM/DCIM ↗
+            Edit in AssetRegistry ↗
           </a>
         </p>
       )}

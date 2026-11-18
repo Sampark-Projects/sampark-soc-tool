@@ -102,7 +102,7 @@ function NewHunt({ onCreated, onClose }: { onCreated: () => void; onClose: () =>
           </label>
         </div>
         <label>
-          Only sessions matching (Arkime expression, optional)
+          Only sessions matching (PacketVault expression, optional)
           <input value={expression} onChange={(e) => setExpression(e.target.value)} placeholder="ip.dst == 8.8.8.8 && port.dst == 53" />
         </label>
         <p>
@@ -116,8 +116,8 @@ function NewHunt({ onCreated, onClose }: { onCreated: () => void; onClose: () =>
         {error && (
           <p className="err">
             {error}{' '}
-            <a href="/arkime/hunt" className="link-out">
-              Create it in Arkime instead ↗
+            <a href="/packetvault/hunt" className="link-out">
+              Create it in PacketVault instead ↗
             </a>
           </p>
         )}
@@ -169,7 +169,7 @@ export default function Hunts() {
 
   return (
     <>
-      <PageHero icon="🎯" title="Hunts" sub="Search stored packets for strings or patterns across many sessions, and follow their progress." href="/arkime/hunt" linkLabel="Open in PCAP & Indexing ↗">
+      <PageHero icon="🎯" title="Hunts" sub="Search stored packets for strings or patterns across many sessions, and follow their progress." href="/packetvault/hunt" linkLabel="Open in PacketVault ↗">
         <button className="btn" onClick={() => setCreating(true)}>
           New hunt
         </button>
@@ -181,8 +181,8 @@ export default function Hunts() {
       {actionError && (
         <p className="err">
           {actionError}{' '}
-          <a href="/arkime/hunt" className="link-out">
-            Do it in Arkime ↗
+          <a href="/packetvault/hunt" className="link-out">
+            Do it in PacketVault ↗
           </a>
         </p>
       )}
