@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { getJSON, sampledNote } from '../api'
 import { PanelDef } from '../data/catalog'
-import { Filters, mergeFilters, rangeParams } from '../lib/query'
+import { Filters, mergeFilters, rangeParams, resolveRange } from '../lib/query'
 import BarList, { Bucket } from './BarList'
 import TimeChart, { TimePoint } from './TimeChart'
 import { ControlsPanel, FileTreePanel, SankeyPanel, TreePanel } from './FlowPanels'
@@ -132,10 +132,10 @@ function TimePanel({ p, ctx }: { p: PanelDef; ctx: Ctx }) {
     setPts(null)
     setError(false)
     const now = Date.now()
-    const { ms } = rangeParams(ctx.range, now)
-    const span = ms || 30 * 24 * 3600e3 // "All time": last 30 days
+    const rr = resolveRange(ctx.range, now)
+    const span = rr.all ? 30 * 24 * 3600e3 : rr.ms // "All time": last 30 days
     const step = span / SLICES
-    const start = now - span
+    const start = rr.all ? now - span : rr.from
     Promise.all(
       Array.from({ length: SLICES }, (_, i) =>
         getJSON('/mapi/document', {

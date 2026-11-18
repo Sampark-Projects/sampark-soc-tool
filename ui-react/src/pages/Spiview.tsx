@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { getJSON } from '../api'
 import BarList, { Bucket } from '../components/BarList'
-import { describeFilter, Filters, RANGES, rangeParams } from '../lib/query'
+import { describeFilter, Filters, rangeParams } from '../lib/query'
+import RangeSelect from '../components/RangeSelect'
 import PageHero from '../components/PageHero'
 
 // SPI View: top values for many fields at once under shared filters (Arkime SPIView equivalent),
@@ -16,7 +17,7 @@ const GROUPS: Record<string, string[]> = {
 interface State { b: Bucket[] | null; err?: string }
 
 export default function Spiview() {
-  const [range, setRange] = useState('all')
+  const [range, setRange] = useState('1h')
   const [filters, setFilters] = useState<Filters>({})
   const [group, setGroup] = useState('General')
   const [data, setData] = useState<Record<string, State>>({})
@@ -42,13 +43,7 @@ export default function Spiview() {
     <>
       <PageHero icon="🧭" title="SPI View" sub="Break traffic down by protocol, port, country and more — click any value to filter." href="/arkime/spiview" linkLabel="Open PCAP & Indexing SPI View ↗" />
       <div className="toolbar card">
-        <select value={range} onChange={(e) => setRange(e.target.value)} aria-label="Time range">
-          {RANGES.map((r) => (
-            <option key={r.key} value={r.key}>
-              {r.label}
-            </option>
-          ))}
-        </select>
+        <RangeSelect value={range} onChange={setRange} />
         <div className="tabs">
           {Object.keys(GROUPS).map((g) => (
             <button key={g} className={g === group ? 'active' : ''} onClick={() => setGroup(g)}>

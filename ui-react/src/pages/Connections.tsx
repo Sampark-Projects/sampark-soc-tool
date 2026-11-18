@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { getJSON } from '../api'
-import { Filters, RANGES, rangeParams } from '../lib/query'
+import { Filters, rangeParams } from '../lib/query'
+import RangeSelect from '../components/RangeSelect'
 import PageHero from '../components/PageHero'
 
 // Connections graph: nodes are values of two fields, edges are co-occurring pairs weighted by
@@ -79,7 +80,7 @@ function layout(edges: Edge[], sides: Map<string, 'a' | 'b' | 'both'>): Node[] {
 export default function Connections() {
   const [params] = useSearchParams()
   const [pair, setPair] = useState(PAIRS[0])
-  const [range, setRange] = useState(DATE_TO_RANGE[params.get('date') ?? ''] ?? 'all')
+  const [range, setRange] = useState(DATE_TO_RANGE[params.get('date') ?? ''] ?? '1h')
   const [protocol, setProtocol] = useState('')
   const [limit, setLimit] = useState(40)
   const [minConn, setMinConn] = useState(1)
@@ -150,13 +151,7 @@ export default function Connections() {
             <option key={p.label}>{p.label}</option>
           ))}
         </select>
-        <select value={range} onChange={(e) => setRange(e.target.value)} aria-label="Time range">
-          {RANGES.map((r) => (
-            <option key={r.key} value={r.key}>
-              {r.label}
-            </option>
-          ))}
-        </select>
+        <RangeSelect value={range} onChange={setRange} />
         <select value={limit} onChange={(e) => setLimit(Number(e.target.value))} aria-label="Query size">
           {[20, 40, 80, 150].map((n) => (
             <option key={n} value={n}>Query size {n}</option>

@@ -1,6 +1,6 @@
 import { FormEvent, useCallback, useEffect, useState } from 'react'
 import RangeSelect from '../components/RangeSelect'
-import { RANGES } from '../lib/query'
+import { resolveRange } from '../lib/query'
 import { Link, useSearchParams } from 'react-router-dom'
 import { getJSON } from '../api'
 import PageHero from '../components/PageHero'
@@ -86,13 +86,14 @@ export default function Assets() {
   const [applied, setApplied] = useState(params.get('q') ?? '')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [range, setRange] = useState('all')
+  const [range, setRange] = useState('1h')
 
   const load = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
-      const r = await getJSON(tab.path, { limit: PAGE, offset: page * PAGE, q: applied || undefined, last_updated__gte: RANGES.find((x) => x.key === range)?.ms ? new Date(Date.now() - (RANGES.find((x) => x.key === range)?.ms ?? 0)).toISOString() : undefined })
+      const rr = resolveRange(range)
+      const r = await getJSON(tab.path, { limit: PAGE, offset: page * PAGE, q: applied || undefined, last_updated__gte: rr.all ? undefined : new Date(rr.from).toISOString(), last_updated__lte: rr.all || !rr.custom ? undefined : new Date(rr.to).toISOString() })
       setRows(r.results ?? [])
       setCount(r.count ?? 0)
     } catch (e: any) {

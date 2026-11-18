@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { osProxy } from '../api'
 import RangeSelect from '../components/RangeSelect'
-import { RANGES } from '../lib/query'
+import { resolveRange } from '../lib/query'
 
 // Local counterpart of Dev Tools: send a request to the search engine and read the answer.
 const PRESETS: { label: string; method: string; path: string; body: string }[] = [
@@ -23,11 +23,11 @@ export default function Console() {
   const [status, setStatus] = useState<number | null>(null)
   const [busy, setBusy] = useState(false)
   const [ms, setMs] = useState<number | null>(null)
-  const [range, setRange] = useState('all')
+  const [range, setRange] = useState('1h')
   // presets that read sessions follow the chosen time range
   const withRange = (b: string) => {
-    const r = RANGES.find((x) => x.key === range)
-    const q = r?.ms ? `{ "range": { "firstPacket": { "gte": ${Date.now() - r.ms} } } }` : '{ "match_all": {} }'
+    const r = resolveRange(range)
+    const q = r.all ? '{ "match_all": {} }' : `{ "range": { "firstPacket": { "gte": ${Math.floor(r.from)}, "lte": ${Math.floor(r.to)} } } }`
     return b.replace(/__Q__/g, q)
   }
 

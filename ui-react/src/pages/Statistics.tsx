@@ -10,7 +10,7 @@ const num = (v: unknown) => (v == null || v === '' ? '—' : Number(v).toLocaleS
 
 export default function Statistics() {
   const [all, setRows] = useState<any[]>([])
-  const [range, setRange] = useState('all')
+  const [range, setRange] = useState('1h')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [auto, setAuto] = useState(true)

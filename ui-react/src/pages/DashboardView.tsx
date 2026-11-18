@@ -3,7 +3,8 @@ import { Link, useParams } from 'react-router-dom'
 import EventTable from '../components/EventTable'
 import PanelView from '../components/PanelView'
 import { catalog, DashboardDef, findDashboard } from '../data/catalog'
-import { describeFilter, Filters, RANGES } from '../lib/query'
+import { describeFilter, Filters } from '../lib/query'
+import RangeSelect from '../components/RangeSelect'
 
 const ACCENT: Record<string, string> = { General: '#38bdf8', Protocols: '#34d399', 'ICS/IoT': '#fb923c', Other: '#a78bfa' }
 
@@ -26,7 +27,7 @@ const NAV = (() => {
 export default function DashboardView({ def }: { def?: DashboardDef }) {
   const { slug } = useParams()
   const dash = def ?? findDashboard(slug)
-  const [range, setRange] = useState('all')
+  const [range, setRange] = useState('1h')
   const [user, setUser] = useState<Filters>({})
   const [refreshKey, setRefreshKey] = useState(0)
   const [every, setEvery] = useState(0) // auto-refresh seconds (0 = off)
@@ -100,13 +101,7 @@ export default function DashboardView({ def }: { def?: DashboardDef }) {
             {dash.description && <p className="dash-desc">{dash.description}</p>}
           </div>
           <div className="toolbar dash-tools">
-            <select value={range} onChange={(e) => setRange(e.target.value)} aria-label="Time range">
-              {RANGES.map((r) => (
-                <option key={r.key} value={r.key}>
-                  {r.label}
-                </option>
-              ))}
-            </select>
+            <RangeSelect value={range} onChange={setRange} />
             <select value={every} onChange={(e) => setEvery(Number(e.target.value))} aria-label="Auto refresh">
               <option value={0}>Auto-refresh off</option>
               <option value={30}>Every 30 s</option>

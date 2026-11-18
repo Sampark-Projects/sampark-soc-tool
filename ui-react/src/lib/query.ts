@@ -9,20 +9,44 @@ export const RANGES = [
   { key: 'all', label: 'All time', ms: 0 },
 ]
 
-export function rangeParams(key: string, now = Date.now()) {
+// A custom range is carried in the same string as the presets: "custom:<fromMs>:<toMs>".
+export const makeCustom = (fromMs: number, toMs: number) => `custom:${Math.floor(fromMs)}:${Math.floor(toMs)}`
+export function parseCustom(key: string): { from: number; to: number } | null {
+  if (!key || !key.startsWith('custom')) return null
+  const [, a, b] = key.split(':')
+  const from = Number(a)
+  const to = Number(b)
+  return Number.isFinite(from) && Number.isFinite(to) && to > from ? { from, to } : null
+}
+
+// The window a range key stands for, in ms. 'all' has from 0.
+export function resolveRange(key: string, now = Date.now()) {
+  const c = parseCustom(key)
+  if (c) return { from: c.from, to: c.to, ms: c.to - c.from, all: false, custom: true }
   const r = RANGES.find((x) => x.key === key) ?? RANGES[1]
-  return { from: r.ms ? String(Math.floor((now - r.ms) / 1000)) : '0', to: String(Math.floor(now / 1000)), ms: r.ms }
+  return { from: r.ms ? now - r.ms : 0, to: now, ms: r.ms, all: !r.ms, custom: false }
+}
+
+export function rangeLabel(key: string): string {
+  const c = parseCustom(key)
+  if (c) return `${new Date(c.from).toLocaleString()} – ${new Date(c.to).toLocaleString()}`
+  return (RANGES.find((x) => x.key === key) ?? RANGES[1]).label
+}
+
+export function rangeParams(key: string, now = Date.now()) {
+  const r = resolveRange(key, now)
+  return { from: r.all ? '0' : String(Math.floor(r.from / 1000)), to: String(Math.floor(r.to / 1000)), ms: r.ms }
 }
 
 // True when a timestamp (ms, seconds or an ISO string) falls inside the chosen range; 'all' keeps everything.
 export function inRange(ts: unknown, key: string, now = Date.now()): boolean {
-  const r = RANGES.find((x) => x.key === key)
-  if (!r || !r.ms) return true
+  const r = resolveRange(key, now)
+  if (r.all) return true
   let n = typeof ts === 'number' ? ts : Date.parse(String(ts ?? ''))
   if (typeof ts === 'string' && /^\d+(\.\d+)?$/.test(ts)) n = Number(ts)
   if (!Number.isFinite(n) || n <= 0) return false
   if (n < 1e12) n *= 1000
-  return n >= now - r.ms && n <= now + 60e3
+  return n >= r.from && n <= (r.custom ? r.to : r.to + 60e3)
 }
 
 // Dashboard-level (saved search) filter + panel filter + the analyst's own filters.

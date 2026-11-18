@@ -24,7 +24,7 @@ export default function ManagementDashboards() {
   const [q, setQ] = useState('')
   const [group, setGroup] = useState<(typeof GROUPS)[number]>('All')
   const [sort, setSort] = useState<Sort>('name')
-  const [range, setRange] = useState('all')
+  const [range, setRange] = useState('1h')
 
   useEffect(() => {
     let alive = true

@@ -3,7 +3,8 @@ import { useSearchParams } from 'react-router-dom'
 import { getJSON } from '../api'
 import BarList, { Bucket } from '../components/BarList'
 import EventTable from '../components/EventTable'
-import { describeFilter, Filters, RANGES, rangeParams } from '../lib/query'
+import { describeFilter, Filters, rangeParams } from '../lib/query'
+import RangeSelect from '../components/RangeSelect'
 import PageHero from '../components/PageHero'
 
 // Free-form event explorer (the Discover equivalent) on /mapi/fields, /mapi/agg and /mapi/document.
@@ -12,7 +13,7 @@ import PageHero from '../components/PageHero'
 const DEFAULT_COLUMNS = ['event.provider', 'event.dataset', 'source.ip', 'destination.ip', 'network.protocol']
 
 export default function Explorer() {
-  const [range, setRange] = useState('all')
+  const [range, setRange] = useState('1h')
   const [filters, setFilters] = useState<Filters>({})
   const [params] = useSearchParams()
   const [columns, setColumns] = useState<string[]>(() => {
@@ -83,13 +84,7 @@ export default function Explorer() {
   return (
     <>
       <PageHero icon="🔎" title="Explorer" sub="Browse raw events: pick fields, add filters and inspect each record.">
-        <select value={range} onChange={(e) => setRange(e.target.value)} aria-label="Time range">
-          {RANGES.map((r) => (
-            <option key={r.key} value={r.key}>
-              {r.label}
-            </option>
-          ))}
-        </select>
+        <RangeSelect value={range} onChange={setRange} />
         <button className="btn" onClick={() => setRefreshKey((k) => k + 1)}>
           Refresh
         </button>

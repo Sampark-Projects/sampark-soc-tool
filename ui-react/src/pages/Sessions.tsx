@@ -2,18 +2,13 @@ import { FormEvent, useCallback, useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { formatBytes, formatTime, getJSON, pick } from '../api'
 import PageHero from '../components/PageHero'
+import RangeSelect from '../components/RangeSelect'
+import { rangeParams } from '../lib/query'
 
 // Native sessions list on top of the Arkime viewer API:
 //   GET /arkime/api/sessions?length=&start=&date=<hours, -1=all>&expression=<arkime expression>
 // Arkime renames DB fields between versions, so each column tries several keys.
 const PAGE = 50
-const DATES = [
-  { label: 'Last hour', v: '1' },
-  { label: 'Last 24 hours', v: '24' },
-  { label: 'Last 7 days', v: '168' },
-  { label: 'Last 30 days', v: '720' },
-  { label: 'All time', v: '-1' },
-]
 
 type Row = Record<string, any>
 
@@ -70,7 +65,7 @@ export default function Sessions() {
   const [rows, setRows] = useState<Row[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(0)
-  const [date, setDate] = useState('-1')
+  const [range, setRange] = useState('1h')
   const [params] = useSearchParams()
   const initial = params.get('expression') ?? ''
   const [expression, setExpression] = useState(initial)
@@ -86,7 +81,7 @@ export default function Sessions() {
       const r = await getJSON('/arkime/api/sessions', {
         length: PAGE,
         start: page * PAGE,
-        date,
+        ...(range === 'all' ? { date: -1 } : { startTime: rangeParams(range).from, stopTime: rangeParams(range).to }),
         expression: applied || undefined,
         order: 'firstPacket:desc',
       })
@@ -98,7 +93,7 @@ export default function Sessions() {
     } finally {
       setLoading(false)
     }
-  }, [page, date, applied])
+  }, [page, range, applied])
 
   useEffect(() => {
     load()
@@ -124,20 +119,13 @@ export default function Sessions() {
           placeholder='Search expression, e.g. ip.src == 10.0.0.5 && port.dst == 443'
           aria-label="Search expression"
         />
-        <select
-          value={date}
-          onChange={(e) => {
+        <RangeSelect
+          value={range}
+          onChange={(v) => {
             setPage(0)
-            setDate(e.target.value)
+            setRange(v)
           }}
-          aria-label="Time range"
-        >
-          {DATES.map((d) => (
-            <option key={d.v} value={d.v}>
-              {d.label}
-            </option>
-          ))}
-        </select>
+        />
         <button className="btn" type="submit">
           Search
         </button>

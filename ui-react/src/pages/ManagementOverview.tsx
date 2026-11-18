@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { formatBytes, getJSON, osProxy } from '../api'
 import { catalog } from '../data/catalog'
 import RangeSelect from '../components/RangeSelect'
-import { RANGES, rangeParams } from '../lib/query'
+import { rangeLabel, rangeParams, resolveRange } from '../lib/query'
 
 // Management > Overview: a single-screen summary of the server, built only from live API reads.
 const PALETTE = ['#38bdf8', '#818cf8', '#34d399', '#fbbf24', '#f472b6', '#fb923c', '#a78bfa', '#2dd4bf']
@@ -160,7 +160,7 @@ export default function Overview({ onTab }: { onTab: (t: any) => void }) {
   const [datasets, setDatasets] = useState<{ label: string; value: number }[]>([])
   const [plug, setPlug] = useState<{ monitors: any[]; detectors: number; channels: number; alerts: number } | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [range, setRange] = useState('all')
+  const [range, setRange] = useState('1h')
 
   useEffect(() => {
     let alive = true
@@ -233,14 +233,15 @@ export default function Overview({ onTab }: { onTab: (t: any) => void }) {
     }
     setEvents(null)
     setHourly(false)
-    const r = RANGES.find((x) => x.key === range)
-    if (r && r.ms) {
-      const n = range === '1h' ? 12 : range === '24h' ? 24 : range === '7d' ? 28 : 30
-      buckets(now - r.ms, now, n)
+    const rr = resolveRange(range, now)
+    if (!rr.all) {
+      const span = rr.ms
+      const n = span <= 3 * 3600e3 ? 12 : span <= 36 * 3600e3 ? 24 : Math.min(30, Math.max(7, Math.ceil(span / DAY)))
+      buckets(rr.from, rr.to, n)
         .then((list) => {
           if (!alive) return
           setEvents(list)
-          setHourly(range !== '30d')
+          setHourly(span < 14 * DAY)
         })
         .catch(fail)
     } else {
@@ -262,12 +263,12 @@ export default function Overview({ onTab }: { onTab: (t: any) => void }) {
         })
         .catch(fail)
     }
-    const { from } = rangeParams(range, now)
+    const { from, to: toSec } = rangeParams(range, now)
     setTotal(null)
-    getJSON('/mapi/document', { from, to: String(Math.floor(now / 1000)), limit: 0, track_total_hits: 'true' })
+    getJSON('/mapi/document', { from, to: toSec, limit: 0, track_total_hits: 'true' })
       .then((x) => alive && setTotal(typeof x?.total === 'object' && x.total ? x.total.value : (x?.total ?? 0)))
       .catch(() => undefined)
-    getJSON('/mapi/agg/event.dataset', { from, to: String(Math.floor(now / 1000)), limit: 8 })
+    getJSON('/mapi/agg/event.dataset', { from, to: toSec, limit: 8 })
       .then((x) => alive && setDatasets((x?.['event.dataset']?.buckets ?? []).map((b: any) => ({ label: String(b.key), value: b.doc_count }))))
       .catch(() => undefined)
     return () => {
@@ -318,7 +319,7 @@ export default function Overview({ onTab }: { onTab: (t: any) => void }) {
       </div>
 
       <div className="ov-kpis">
-        <Kpi label="Events stored" value={total === null ? '…' : nf(total)} hint={(RANGES.find((x) => x.key === range)?.label ?? 'All time').toLowerCase()} color="#38bdf8" onClick={() => onTab('indices')} />
+        <Kpi label="Events stored" value={total === null ? '…' : nf(total)} hint={rangeLabel(range).toLowerCase()} color="#38bdf8" onClick={() => onTab('indices')} />
         <Kpi label="Disk used" value={indices.length ? formatBytes(bytes) : '…'} hint={`${indices.length} indices`} color="#818cf8" onClick={() => onTab('indices')} />
         <Kpi label="Dashboards" value={nf(counts.dashboard ?? 0)} hint="ready to open" color="#34d399" onClick={() => onTab('dashboard')} />
         <Kpi label="Visualizations" value={nf(counts.visualization ?? 0)} color="#fbbf24" onClick={() => onTab('visualization')} />
@@ -327,7 +328,7 @@ export default function Overview({ onTab }: { onTab: (t: any) => void }) {
       </div>
 
       <div className="ov-grid">
-        <Card title={hourly ? 'Events per hour' : 'Events per day'} sub={busiest && busiest.v ? `peak ${new Date(busiest.t).toLocaleString(undefined, hourly ? { month: 'short', day: 'numeric', hour: 'numeric' } : { month: 'short', day: 'numeric' })} · ${nf(busiest.v)}` : (RANGES.find((x) => x.key === range)?.label ?? 'Last 30 days').toLowerCase()} span={8}>
+        <Card title={hourly ? 'Events per hour' : 'Events per day'} sub={busiest && busiest.v ? `peak ${new Date(busiest.t).toLocaleString(undefined, hourly ? { month: 'short', day: 'numeric', hour: 'numeric' } : { month: 'short', day: 'numeric' })} · ${nf(busiest.v)}` : rangeLabel(range).toLowerCase()} span={8}>
           {events ? <Area pts={events} hourly={hourly} /> : <p className="muted">Loading…</p>}
         </Card>
         <Card title="Where the events come from" sub="by dataset" span={4}>

@@ -43,7 +43,7 @@ export default function Files() {
   const base = ROOT + path
   const [entries, setEntries] = useState<Entry[]>([])
   const [filter, setFilter] = useState('')
-  const [range, setRange] = useState('all')
+  const [range, setRange] = useState('1h')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 

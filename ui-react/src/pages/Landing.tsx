@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { useEffect, useState, type ReactNode } from 'react'
 import { getJSON } from '../api'
 import RangeSelect from '../components/RangeSelect'
-import { RANGES, rangeParams } from '../lib/query'
+import { rangeLabel, rangeParams } from '../lib/query'
 import { AppConfig, defaultConfig, loadConfig } from '../config'
 
 const UI = import.meta.env.BASE_URL
@@ -66,13 +66,12 @@ function buildTiles(c: AppConfig): Tile[] {
 
 export default function Landing() {
   const [config, setConfig] = useState<AppConfig>(defaultConfig)
-  const [range, setRange] = useState('all')
+  const [range, setRange] = useState('1h')
   const [total, setTotal] = useState<number | null>(null)
   const [top, setTop] = useState<{ k: string; n: number }[]>([])
   useEffect(() => {
     let alive = true
-    const { from } = rangeParams(range)
-    const to = String(Math.floor(Date.now() / 1000))
+    const { from, to } = rangeParams(range)
     setTotal(null)
     getJSON('/mapi/document', { from, to, limit: 0, track_total_hits: 'true' })
       .then((x) => alive && setTotal(typeof x?.total === 'object' && x.total ? x.total.value : (x?.total ?? 0)))
@@ -106,7 +105,7 @@ export default function Landing() {
           <RangeSelect value={range} onChange={setRange} />
         </div>
         <p>
-          <b>{total === null ? '…' : total.toLocaleString()}</b> events {(RANGES.find((x) => x.key === range)?.label ?? '').toLowerCase()}
+          <b>{total === null ? '…' : total.toLocaleString()}</b> events {rangeLabel(range).toLowerCase()}
           {top.length ? ' — top sources: ' + top.map((t) => `${t.k} (${t.n.toLocaleString()})`).join(', ') : ''}
         </p>
       </div>

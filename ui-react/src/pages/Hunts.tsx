@@ -3,17 +3,11 @@ import { Link } from 'react-router-dom'
 import { getJSON, pick, sendJSON } from '../api'
 import PageHero from '../components/PageHero'
 import RangeSelect from '../components/RangeSelect'
-import { inRange } from '../lib/query'
+import { inRange, rangeParams } from '../lib/query'
 
 // Arkime packet-search hunts: list (GET /arkime/api/hunts), create (POST /arkime/api/hunt),
 // pause/resume (PUT /arkime/api/hunt/<id>/pause|play) and delete (DELETE /arkime/api/hunt/<id>).
-const RANGES = [
-  { label: 'Last hour', hours: 1 },
-  { label: 'Last 24 hours', hours: 24 },
-  { label: 'Last 7 days', hours: 168 },
-  { label: 'Last 30 days', hours: 720 },
-  { label: 'All time', hours: -1 },
-]
+
 const SEARCH_TYPES = [
   { v: 'ascii', t: 'ASCII (case sensitive)' },
   { v: 'asciicase', t: 'ASCII (case insensitive)' },
@@ -31,7 +25,7 @@ function NewHunt({ onCreated, onClose }: { onCreated: () => void; onClose: () =>
   const [src, setSrc] = useState(true)
   const [dst, setDst] = useState(true)
   const [size, setSize] = useState(50)
-  const [hours, setHours] = useState(24)
+  const [huntRange, setHuntRange] = useState('1h')
   const [expression, setExpression] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -41,10 +35,11 @@ function NewHunt({ onCreated, onClose }: { onCreated: () => void; onClose: () =>
     setBusy(true)
     setError(null)
     try {
-      const now = Math.floor(Date.now() / 1000)
-      const startTime = hours < 0 ? 0 : now - hours * 3600
+      const win = rangeParams(huntRange)
+      const startTime = Number(win.from)
+      const stopTime = Number(win.to)
       // Arkime wants the number of sessions the hunt will cover, so count them first.
-      const counted = await getJSON('/arkime/api/sessions', { length: 1, start: 0, date: hours, expression: expression.trim() || undefined })
+      const counted = await getJSON('/arkime/api/sessions', { length: 1, start: 0, startTime, stopTime, expression: expression.trim() || undefined })
       const totalSessions = Number(counted?.recordsFiltered ?? 0)
       if (!totalSessions) throw new Error('No sessions match that time range and expression, so there is nothing to hunt through.')
       await sendJSON('POST', '/arkime/api/hunt', {
@@ -56,7 +51,7 @@ function NewHunt({ onCreated, onClose }: { onCreated: () => void; onClose: () =>
         dst,
         size,
         totalSessions,
-        query: { startTime, stopTime: now, expression: expression.trim() },
+        query: { startTime, stopTime, expression: expression.trim() },
       })
       onCreated()
       onClose()
@@ -99,13 +94,7 @@ function NewHunt({ onCreated, onClose }: { onCreated: () => void; onClose: () =>
           </label>
           <label>
             Time range
-            <select value={hours} onChange={(e) => setHours(Number(e.target.value))}>
-              {RANGES.map((r) => (
-                <option key={r.hours} value={r.hours}>
-                  {r.label}
-                </option>
-              ))}
-            </select>
+            <RangeSelect value={huntRange} onChange={setHuntRange} />
           </label>
           <label>
             Packets per session
@@ -147,7 +136,7 @@ function NewHunt({ onCreated, onClose }: { onCreated: () => void; onClose: () =>
 
 export default function Hunts() {
   const [all, setRows] = useState<any[]>([])
-  const [listRange, setListRange] = useState('all')
+  const [listRange, setListRange] = useState('1h')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
