@@ -1,6 +1,8 @@
 import { labelOf } from '../data/components'
 import { useCallback, useEffect, useState } from 'react'
 import { getJSON } from '../api'
+import RangeSelect from '../components/RangeSelect'
+import { inRange } from '../lib/query'
 import PageHero from '../components/PageHero'
 
 // System status: /mapi/ready, /mapi/version, /mapi/ingest-stats, /mapi/indices
@@ -31,6 +33,7 @@ export default function Status() {
   const [ingest, setIngest] = useState<Res<{ sources: Record<string, string>; latest_ingest_age_seconds?: number }>>({})
   const [indices, setIndices] = useState<Res<{ indices: any[] }>>({})
   const [loading, setLoading] = useState(true)
+  const [range, setRange] = useState('all')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -60,11 +63,12 @@ export default function Status() {
   const docs = (indices.data?.indices ?? []).reduce((a, r) => a + (Number(r['docs.count']) || 0), 0)
   const hs = String(health?.status ?? '')
   const hsColor = hs === 'green' ? '#34d399' : hs === 'yellow' ? '#fbbf24' : hs ? '#f87171' : '#94a3b8'
-  const sources = Object.entries(ingest.data?.sources ?? {})
+  const sources = Object.entries(ingest.data?.sources ?? {}).filter(([, v]) => inRange(/[zZ]|[+-]\d\d:?\d\d$/.test(v) ? v : v + 'Z', range))
 
   return (
     <>
       <PageHero icon="🩺" title="System Status" sub="Which services are running, how the search cluster is doing and when data last arrived.">
+        <RangeSelect value={range} onChange={setRange} label="Show sensors and indices active within" />
         <button className="btn" onClick={load} disabled={loading}>
           {loading ? 'Refreshing…' : 'Refresh'}
         </button>
@@ -152,6 +156,7 @@ export default function Status() {
             </thead>
             <tbody>
               {[...indices.data.indices]
+                .filter((i) => !Number(i['creation.date']) || inRange(Number(i['creation.date']), range))
                 .sort((a, b) => String(b.index).localeCompare(String(a.index)))
                 .map((i) => (
                   <tr key={i.uuid ?? i.index}>

@@ -2,6 +2,8 @@ import { ReactNode, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { formatBytes, getJSON, osProxy } from '../api'
 import { catalog } from '../data/catalog'
+import RangeSelect from '../components/RangeSelect'
+import { RANGES, rangeParams } from '../lib/query'
 
 // Management > Overview: a single-screen summary of the server, built only from live API reads.
 const PALETTE = ['#38bdf8', '#818cf8', '#34d399', '#fbbf24', '#f472b6', '#fb923c', '#a78bfa', '#2dd4bf']
@@ -158,6 +160,7 @@ export default function Overview({ onTab }: { onTab: (t: any) => void }) {
   const [datasets, setDatasets] = useState<{ label: string; value: number }[]>([])
   const [plug, setPlug] = useState<{ monitors: any[]; detectors: number; channels: number; alerts: number } | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [range, setRange] = useState('all')
 
   useEffect(() => {
     let alive = true
@@ -195,53 +198,6 @@ export default function Overview({ onTab }: { onTab: (t: any) => void }) {
     getJSON('/mapi/version').then(set(setVersion)).catch(() => undefined)
     osProxy('GET', '_cluster/health').then((r) => alive && setHealth(r.json)).catch(() => undefined)
 
-    // events per day for the last 30 days (same /mapi/document counting the dashboards use)
-    const now = Date.now()
-    const DAY = 24 * 3600e3
-    const start = now - 30 * DAY
-    Promise.all(
-      Array.from({ length: 30 }, (_, i) =>
-        getJSON('/mapi/document', {
-          from: String(Math.floor((start + i * DAY) / 1000)),
-          to: String(Math.floor((start + (i + 1) * DAY) / 1000) - 1),
-          limit: 0,
-          track_total_hits: 'true',
-        }).then((r) => ({ t: start + i * DAY, v: typeof r?.total === 'object' && r.total ? r.total.value : (r?.total ?? 0) })),
-      ),
-    )
-      .then(async (daily) => {
-        if (!alive) return
-        setEvents(daily)
-        const live = daily.filter((d) => d.v > 0)
-        if (!live.length || live.length > 3) return
-        // everything landed in a few days: zoom in with hourly buckets so the chart shows a shape, not one bar
-        const from = live[0].t
-        const to = live[live.length - 1].t + DAY
-        const N = Math.min(72, Math.max(24, Math.round((to - from) / 3600e3)))
-        const stepMs = (to - from) / N
-        const hourly = await Promise.all(
-          Array.from({ length: N }, (_, i) =>
-            getJSON('/mapi/document', {
-              from: String(Math.floor((from + i * stepMs) / 1000)),
-              to: String(Math.floor((from + (i + 1) * stepMs) / 1000) - 1),
-              limit: 0,
-              track_total_hits: 'true',
-            }).then((r) => ({ t: from + i * stepMs, v: typeof r?.total === 'object' && r.total ? r.total.value : (r?.total ?? 0) })),
-          ),
-        )
-        if (alive) {
-          setEvents(hourly)
-          setHourly(true)
-        }
-      })
-      .catch(fail)
-    getJSON('/mapi/document', { from: '0', to: String(Math.floor(now / 1000)), limit: 0, track_total_hits: 'true' })
-      .then((r) => alive && setTotal(typeof r?.total === 'object' && r.total ? r.total.value : (r?.total ?? 0)))
-      .catch(() => undefined)
-    getJSON('/mapi/agg/event.dataset', { from: '0', to: String(Math.floor(now / 1000)), limit: 8 })
-      .then((r) => alive && setDatasets((r?.['event.dataset']?.buckets ?? []).map((b: any) => ({ label: String(b.key), value: b.doc_count }))))
-      .catch(() => undefined)
-
     Promise.all([
       osProxy('GET', '_plugins/_alerting/monitors/_search', { size: 200, query: { match_all: {} } }),
       osProxy('GET', '_plugins/_anomaly_detection/detectors/_search', { size: 200, query: { match_all: {} } }),
@@ -262,6 +218,62 @@ export default function Overview({ onTab }: { onTab: (t: any) => void }) {
       alive = false
     }
   }, [])
+
+  // events chart, total and dataset split follow the selected time range
+  useEffect(() => {
+    let alive = true
+    const fail = (e: any) => alive && setError(e?.message ?? String(e))
+    const now = Date.now()
+    const DAY = 24 * 3600e3
+    const count = (from: number, to: number) =>
+      getJSON('/mapi/document', { from: String(Math.floor(from / 1000)), to: String(Math.floor(to / 1000) - 1), limit: 0, track_total_hits: 'true' }).then((r) => (typeof r?.total === 'object' && r.total ? r.total.value : (r?.total ?? 0)))
+    const buckets = (start: number, end: number, n: number) => {
+      const step = (end - start) / n
+      return Promise.all(Array.from({ length: n }, (_, i) => count(start + i * step, start + (i + 1) * step).then((v: number) => ({ t: start + i * step, v }))))
+    }
+    setEvents(null)
+    setHourly(false)
+    const r = RANGES.find((x) => x.key === range)
+    if (r && r.ms) {
+      const n = range === '1h' ? 12 : range === '24h' ? 24 : range === '7d' ? 28 : 30
+      buckets(now - r.ms, now, n)
+        .then((list) => {
+          if (!alive) return
+          setEvents(list)
+          setHourly(range !== '30d')
+        })
+        .catch(fail)
+    } else {
+      // all time: 30 daily buckets, then zoom into hours when everything landed in a few days
+      buckets(now - 30 * DAY, now, 30)
+        .then(async (daily) => {
+          if (!alive) return
+          setEvents(daily)
+          const live = daily.filter((d) => d.v > 0)
+          if (!live.length || live.length > 3) return
+          const from = live[0].t
+          const to = live[live.length - 1].t + DAY
+          const N = Math.min(72, Math.max(24, Math.round((to - from) / 3600e3)))
+          const hrs = await buckets(from, to, N)
+          if (alive) {
+            setEvents(hrs)
+            setHourly(true)
+          }
+        })
+        .catch(fail)
+    }
+    const { from } = rangeParams(range, now)
+    setTotal(null)
+    getJSON('/mapi/document', { from, to: String(Math.floor(now / 1000)), limit: 0, track_total_hits: 'true' })
+      .then((x) => alive && setTotal(typeof x?.total === 'object' && x.total ? x.total.value : (x?.total ?? 0)))
+      .catch(() => undefined)
+    getJSON('/mapi/agg/event.dataset', { from, to: String(Math.floor(now / 1000)), limit: 8 })
+      .then((x) => alive && setDatasets((x?.['event.dataset']?.buckets ?? []).map((b: any) => ({ label: String(b.key), value: b.doc_count }))))
+      .catch(() => undefined)
+    return () => {
+      alive = false
+    }
+  }, [range])
 
   const families = useMemo(() => {
     const m = new Map<string, number>()
@@ -297,13 +309,16 @@ export default function Overview({ onTab }: { onTab: (t: any) => void }) {
             {health?.active_shards ? ` · ${health.active_shards} shards` : ''}
           </p>
         </div>
-        <span className="ov-health" style={{ ['--c' as any]: statusColor }}>
-          <i /> {status ? `Cluster ${status}` : 'Checking cluster…'}
-        </span>
+        <div style={{ display: 'flex', gap: '.6rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          <RangeSelect value={range} onChange={setRange} />
+          <span className="ov-health" style={{ ['--c' as any]: statusColor }}>
+            <i /> {status ? `Cluster ${status}` : 'Checking cluster…'}
+          </span>
+        </div>
       </div>
 
       <div className="ov-kpis">
-        <Kpi label="Events stored" value={total === null ? '…' : nf(total)} hint="all time" color="#38bdf8" onClick={() => onTab('indices')} />
+        <Kpi label="Events stored" value={total === null ? '…' : nf(total)} hint={(RANGES.find((x) => x.key === range)?.label ?? 'All time').toLowerCase()} color="#38bdf8" onClick={() => onTab('indices')} />
         <Kpi label="Disk used" value={indices.length ? formatBytes(bytes) : '…'} hint={`${indices.length} indices`} color="#818cf8" onClick={() => onTab('indices')} />
         <Kpi label="Dashboards" value={nf(counts.dashboard ?? 0)} hint="ready to open" color="#34d399" onClick={() => onTab('dashboard')} />
         <Kpi label="Visualizations" value={nf(counts.visualization ?? 0)} color="#fbbf24" onClick={() => onTab('visualization')} />
@@ -312,7 +327,7 @@ export default function Overview({ onTab }: { onTab: (t: any) => void }) {
       </div>
 
       <div className="ov-grid">
-        <Card title={hourly ? 'Events per hour' : 'Events per day'} sub={busiest && busiest.v ? `peak ${new Date(busiest.t).toLocaleString(undefined, hourly ? { month: 'short', day: 'numeric', hour: 'numeric' } : { month: 'short', day: 'numeric' })} · ${nf(busiest.v)}` : 'last 30 days'} span={8}>
+        <Card title={hourly ? 'Events per hour' : 'Events per day'} sub={busiest && busiest.v ? `peak ${new Date(busiest.t).toLocaleString(undefined, hourly ? { month: 'short', day: 'numeric', hour: 'numeric' } : { month: 'short', day: 'numeric' })} · ${nf(busiest.v)}` : (RANGES.find((x) => x.key === range)?.label ?? 'Last 30 days').toLowerCase()} span={8}>
           {events ? <Area pts={events} hourly={hourly} /> : <p className="muted">Loading…</p>}
         </Card>
         <Card title="Where the events come from" sub="by dataset" span={4}>

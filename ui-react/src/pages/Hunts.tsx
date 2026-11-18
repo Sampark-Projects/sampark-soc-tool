@@ -2,6 +2,8 @@ import { FormEvent, useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getJSON, pick, sendJSON } from '../api'
 import PageHero from '../components/PageHero'
+import RangeSelect from '../components/RangeSelect'
+import { inRange } from '../lib/query'
 
 // Arkime packet-search hunts: list (GET /arkime/api/hunts), create (POST /arkime/api/hunt),
 // pause/resume (PUT /arkime/api/hunt/<id>/pause|play) and delete (DELETE /arkime/api/hunt/<id>).
@@ -144,11 +146,14 @@ function NewHunt({ onCreated, onClose }: { onCreated: () => void; onClose: () =>
 }
 
 export default function Hunts() {
-  const [rows, setRows] = useState<any[]>([])
+  const [all, setRows] = useState<any[]>([])
+  const [listRange, setListRange] = useState('all')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
+
+  const rows = all.filter((h) => inRange(Number(pick(h, ['created'])), listRange))
 
   const load = useCallback(() => {
     setLoading(true)
@@ -192,6 +197,10 @@ export default function Hunts() {
           </a>
         </p>
       )}
+      <div className="toolbar">
+        <RangeSelect value={listRange} onChange={setListRange} label="Hunts created within" />
+        <span className="muted small">{rows.length} of {all.length} hunts</span>
+      </div>
       <div className="card table-wrap">
         <table>
           <thead>

@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
+import RangeSelect from '../components/RangeSelect'
+import { inRange } from '../lib/query'
 import { Link } from 'react-router-dom'
 import { catalog } from '../data/catalog'
 
@@ -22,6 +24,7 @@ export default function ManagementDashboards() {
   const [q, setQ] = useState('')
   const [group, setGroup] = useState<(typeof GROUPS)[number]>('All')
   const [sort, setSort] = useState<Sort>('name')
+  const [range, setRange] = useState('all')
 
   useEffect(() => {
     let alive = true
@@ -58,10 +61,10 @@ export default function ManagementDashboards() {
 
   const shown = useMemo(() => {
     const t = q.trim().toLowerCase()
-    const list = (cards ?? []).filter((c) => (group === 'All' || c.group === group) && (!t || c.title.toLowerCase().includes(t) || c.description.toLowerCase().includes(t)))
+    const list = (cards ?? []).filter((c) => (group === 'All' || c.group === group) && inRange(c.updated, range) && (!t || c.title.toLowerCase().includes(t) || c.description.toLowerCase().includes(t)))
     list.sort((a, b) => (sort === 'recent' ? b.updated.localeCompare(a.updated) : sort === 'panels' ? b.panels - a.panels : a.title.localeCompare(b.title)))
     return list
-  }, [cards, q, group, sort])
+  }, [cards, q, group, sort, range])
 
   return (
     <div className="dg">
@@ -72,6 +75,7 @@ export default function ManagementDashboards() {
           <option value="recent">Recently updated</option>
           <option value="panels">Most panels</option>
         </select>
+        <RangeSelect value={range} onChange={setRange} label="Updated within" />
       </div>
       <div className="dg-chips">
         {GROUPS.filter((g) => g === 'All' || counts[g]).map((g) => (

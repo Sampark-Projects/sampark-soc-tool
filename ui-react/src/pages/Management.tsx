@@ -4,6 +4,8 @@ import { getJSON, osProxy } from '../api'
 import { catalog } from '../data/catalog'
 import Overview from './ManagementOverview'
 import PageHero from '../components/PageHero'
+import RangeSelect from '../components/RangeSelect'
+import { inRange } from '../lib/query'
 import ManagementDashboards from './ManagementDashboards'
 
 // Read-only counterpart of the original Dashboards "Dashboards Management" / "Index Management" areas:
@@ -41,22 +43,23 @@ const visType = (o: SavedObject) => {
 }
 
 function SavedObjects({ type }: { type: 'dashboard' | 'visualization' | 'search' | 'index-pattern' }) {
-  const [rows, setRows] = useState<SavedObject[]>([])
+  const [allRows, setAllRows] = useState<SavedObject[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [text, setText] = useState('')
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [range, setRange] = useState('all')
 
-  useEffect(() => setPage(1), [type, search])
+  useEffect(() => setPage(1), [type, search, range])
   useEffect(() => {
     let alive = true
     setLoading(true)
     const params: Record<string, string | number | undefined> = {
       type,
-      per_page: PER_PAGE,
-      page,
+      per_page: range === 'all' ? PER_PAGE : 1000,
+      page: range === 'all' ? page : 1,
     }
     if (search) {
       params.search = `${search}*`
@@ -65,8 +68,9 @@ function SavedObjects({ type }: { type: 'dashboard' | 'visualization' | 'search'
     getJSON('/dashboards/api/saved_objects/_find', params)
       .then((r) => {
         if (!alive) return
-        setRows([...(r?.saved_objects ?? [])].sort((a: SavedObject, b: SavedObject) => String(a.attributes.title ?? '').localeCompare(String(b.attributes.title ?? ''))))
-        setTotal(r?.total ?? 0)
+        const list = [...(r?.saved_objects ?? [])].filter((o: SavedObject) => inRange(o.updated_at, range)).sort((a: SavedObject, b: SavedObject) => String(a.attributes.title ?? '').localeCompare(String(b.attributes.title ?? '')))
+        setAllRows(list)
+        setTotal(range === 'all' ? (r?.total ?? 0) : list.length)
         setError(null)
       })
       .catch((e) => alive && setError(e.message ?? String(e)))
@@ -74,14 +78,16 @@ function SavedObjects({ type }: { type: 'dashboard' | 'visualization' | 'search'
     return () => {
       alive = false
     }
-  }, [type, page, search])
+  }, [type, page, search, range])
 
+  const rows = range === 'all' ? allRows : allRows.slice((page - 1) * PER_PAGE, page * PER_PAGE)
   const pages = Math.max(1, Math.ceil(total / PER_PAGE))
   return (
     <>
       <div className="toolbar">
         <input placeholder="Search by title…" value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && setSearch(text.trim())} />
         <button className="btn" onClick={() => setSearch(text.trim())}>Search</button>
+        <RangeSelect value={range} onChange={setRange} label="Updated within" />
         <span className="muted small">{loading ? 'Loading…' : `${total.toLocaleString()} found`}</span>
       </div>
       {error && <p className="err">Could not load saved objects: {error}</p>}
@@ -215,7 +221,11 @@ function Fields() {
 
 
 // Alerting monitors, anomaly detectors, notification channels and active alerts, read through the console proxy.
-interface PluginRow { id: string; name: string; kind: string; detail: string; state: string; when: string }
+interface PluginRow { id: string; name: string; kind: string; detail: string; state: string; when: string; ts: number }
+const tsOf = (v: unknown) => {
+  const n = Number(v)
+  return n > 1e9 ? (n < 1e12 ? n * 1000 : n) : Date.parse(String(v ?? '')) || 0
+}
 const when = (v: unknown) => {
   const n = Number(v)
   return n > 1e9 ? new Date(n < 1e12 ? n * 1000 : n).toLocaleString() : typeof v === 'string' ? v : ''
@@ -228,30 +238,32 @@ const PLUGIN: Record<string, { path: string; body?: unknown; rows: (j: any) => P
     rows: (j) =>
       (j?.hits?.hits ?? []).map((h: any) => {
         const m = h._source?.monitor ?? h._source ?? {}
-        return { id: h._id, name: m.name ?? h._id, kind: m.monitor_type ?? '', detail: `${schedule(m.schedule)} · ${(m.triggers ?? []).length} triggers`, state: m.enabled ? 'enabled' : 'disabled', when: when(m.last_update_time) }
+        return { id: h._id, name: m.name ?? h._id, kind: m.monitor_type ?? '', detail: `${schedule(m.schedule)} · ${(m.triggers ?? []).length} triggers`, state: m.enabled ? 'enabled' : 'disabled', when: when(m.last_update_time), ts: tsOf(m.last_update_time) }
       }),
   },
   detectors: {
     path: '_plugins/_anomaly_detection/detectors/_search',
     body: { size: 200, query: { match_all: {} } },
     rows: (j) =>
-      (j?.hits?.hits ?? []).map((h: any) => ({ id: h._id, name: h._source?.name ?? h._id, kind: 'detector', detail: (h._source?.indices ?? []).join(', '), state: h._source?.enabled_time ? 'enabled' : 'stopped', when: when(h._source?.last_update_time) })),
+      (j?.hits?.hits ?? []).map((h: any) => ({ id: h._id, name: h._source?.name ?? h._id, kind: 'detector', detail: (h._source?.indices ?? []).join(', '), state: h._source?.enabled_time ? 'enabled' : 'stopped', when: when(h._source?.last_update_time), ts: tsOf(h._source?.last_update_time) })),
   },
   channels: {
     path: '_plugins/_notifications/configs?max_items=200',
     rows: (j) =>
-      (j?.config_list ?? []).map((c: any) => ({ id: c.config_id, name: c.config?.name ?? c.config_id, kind: c.config?.config_type ?? '', detail: c.config?.description ?? '', state: c.config?.is_enabled ? 'enabled' : 'disabled', when: when(c.last_updated_time_ms) })),
+      (j?.config_list ?? []).map((c: any) => ({ id: c.config_id, name: c.config?.name ?? c.config_id, kind: c.config?.config_type ?? '', detail: c.config?.description ?? '', state: c.config?.is_enabled ? 'enabled' : 'disabled', when: when(c.last_updated_time_ms), ts: tsOf(c.last_updated_time_ms) })),
   },
   alerts: {
     path: '_plugins/_alerting/monitors/alerts?size=200',
     rows: (j) =>
-      (j?.alerts ?? []).map((a: any) => ({ id: '', name: `${a.monitor_name ?? ''} / ${a.trigger_name ?? ''}`, kind: `severity ${a.severity ?? ''}`, detail: a.error_message ?? '', state: String(a.state ?? '').toLowerCase(), when: when(a.start_time) })),
+      (j?.alerts ?? []).map((a: any) => ({ id: '', name: `${a.monitor_name ?? ''} / ${a.trigger_name ?? ''}`, kind: `severity ${a.severity ?? ''}`, detail: a.error_message ?? '', state: String(a.state ?? '').toLowerCase(), when: when(a.start_time), ts: tsOf(a.start_time) })),
   },
 }
 
 function PluginList({ kind }: { kind: 'monitors' | 'detectors' | 'channels' | 'alerts' }) {
-  const [rows, setRows] = useState<PluginRow[] | null>(null)
+  const [all, setRows] = useState<PluginRow[] | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [range, setRange] = useState('all')
+  const rows = useMemo(() => (all ? all.filter((r) => inRange(r.ts, range)) : null), [all, range])
   useEffect(() => {
     let alive = true
     setRows(null)
@@ -275,7 +287,10 @@ function PluginList({ kind }: { kind: 'monitors' | 'detectors' | 'channels' | 'a
       {error && <p className="err">Could not load: {error}</p>}
       {rows && (
         <>
-          <p className="muted small">{rows.length} found on the server</p>
+          <div className="toolbar">
+            <RangeSelect value={range} onChange={setRange} label="Updated within" />
+            <span className="muted small">{rows.length} found on the server</span>
+          </div>
           <div className="card table-wrap">
             <table>
               <thead><tr><th>Name</th><th>Type</th><th>Details</th><th>State</th><th>Updated</th></tr></thead>

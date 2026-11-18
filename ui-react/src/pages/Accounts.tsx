@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { AppConfig, defaultConfig, loadConfig } from '../config'
 import PageHero from '../components/PageHero'
+import { labelOf } from '../data/components'
 
 // Account management is provided by the existing htadmin PHP app (third-party,
 // built into its own container). This page is the React front door to it; the
@@ -14,6 +15,7 @@ export default function Accounts() {
   // htadmin only exists when the backend uses local (basic) accounts, where the link is /auth/. With LDAP,
   // Keycloak or no authentication the link points somewhere else (documentation, Keycloak, ...), and
   // appending htadmin page names to it would give broken URLs, so show a single tile instead.
+  const label = labelOf('Keycloak') ?? config.authTitle
   const isHtadmin = /^\/auth\/?$/.test(config.authUrl)
   const base = config.authUrl.endsWith('/') ? config.authUrl : `${config.authUrl}/`
   const actions = isHtadmin
@@ -31,7 +33,7 @@ export default function Accounts() {
       ]
     : [
         {
-          title: config.authTitle,
+          title: label,
           desc: 'Accounts are not managed locally in this authentication mode. Open the page that explains or manages them.',
           href: config.authUrl,
         },
@@ -39,7 +41,7 @@ export default function Accounts() {
 
   return (
     <>
-      <PageHero icon="👤" title={config.authTitle} sub={config.authDesc} />
+      <PageHero icon="👤" title={label} sub="Users, sign-in and permissions." />
       <div className="tile-grid">
         {actions.map((a, i) => (
           <div className="card tile" key={a.title} style={{ ['--c' as any]: i % 2 ? '#34d399' : '#38bdf8' }}>

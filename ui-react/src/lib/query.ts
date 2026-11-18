@@ -14,6 +14,17 @@ export function rangeParams(key: string, now = Date.now()) {
   return { from: r.ms ? String(Math.floor((now - r.ms) / 1000)) : '0', to: String(Math.floor(now / 1000)), ms: r.ms }
 }
 
+// True when a timestamp (ms, seconds or an ISO string) falls inside the chosen range; 'all' keeps everything.
+export function inRange(ts: unknown, key: string, now = Date.now()): boolean {
+  const r = RANGES.find((x) => x.key === key)
+  if (!r || !r.ms) return true
+  let n = typeof ts === 'number' ? ts : Date.parse(String(ts ?? ''))
+  if (typeof ts === 'string' && /^\d+(\.\d+)?$/.test(ts)) n = Number(ts)
+  if (!Number.isFinite(n) || n <= 0) return false
+  if (n < 1e12) n *= 1000
+  return n >= now - r.ms && n <= now + 60e3
+}
+
 // Dashboard-level (saved search) filter + panel filter + the analyst's own filters.
 export function mergeFilters(...fs: (Filters | undefined)[]): string | undefined {
   const out: Filters = {}

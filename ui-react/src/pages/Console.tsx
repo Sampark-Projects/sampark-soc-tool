@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { osProxy } from '../api'
+import RangeSelect from '../components/RangeSelect'
+import { RANGES } from '../lib/query'
 
 // Local counterpart of Dev Tools: send a request to the search engine and read the answer.
 const PRESETS: { label: string; method: string; path: string; body: string }[] = [
   { label: 'Cluster health', method: 'GET', path: '_cluster/health', body: '' },
   { label: 'Indices', method: 'GET', path: '_cat/indices?v&s=index', body: '' },
-  { label: 'Latest 5 sessions', method: 'GET', path: 'arkime_sessions3-*/_search', body: '{\n  "size": 5,\n  "sort": [{ "firstPacket": "desc" }],\n  "query": { "match_all": {} }\n}' },
-  { label: 'Count by protocol', method: 'GET', path: 'arkime_sessions3-*/_search', body: '{\n  "size": 0,\n  "aggs": { "p": { "terms": { "field": "network.protocol", "size": 10 } } }\n}' },
+  { label: 'Latest 5 sessions', method: 'GET', path: 'arkime_sessions3-*/_search', body: '{\n  "size": 5,\n  "sort": [{ "firstPacket": "desc" }],\n  "query": __Q__\n}' },
+  { label: 'Count by protocol', method: 'GET', path: 'arkime_sessions3-*/_search', body: '{\n  "size": 0,\n  "query": __Q__,\n  "aggs": { "p": { "terms": { "field": "network.protocol", "size": 10 } } }\n}' },
   { label: 'Alerting monitors', method: 'GET', path: '_plugins/_alerting/monitors/_search', body: '{ "size": 50, "query": { "match_all": {} } }' },
   { label: 'Anomaly detectors', method: 'GET', path: '_plugins/_anomaly_detection/detectors/_search', body: '{ "size": 50, "query": { "match_all": {} } }' },
   { label: 'Notification channels', method: 'GET', path: '_plugins/_notifications/configs', body: '' },
@@ -21,6 +23,13 @@ export default function Console() {
   const [status, setStatus] = useState<number | null>(null)
   const [busy, setBusy] = useState(false)
   const [ms, setMs] = useState<number | null>(null)
+  const [range, setRange] = useState('all')
+  // presets that read sessions follow the chosen time range
+  const withRange = (b: string) => {
+    const r = RANGES.find((x) => x.key === range)
+    const q = r?.ms ? `{ "range": { "firstPacket": { "gte": ${Date.now() - r.ms} } } }` : '{ "match_all": {} }'
+    return b.replace(/__Q__/g, q)
+  }
 
   const run = async () => {
     if (method !== 'GET' && method !== 'HEAD' && !READ_ONLY.test(path)) {
@@ -48,8 +57,9 @@ export default function Console() {
         <span className="muted small">Sends requests to the search engine through the dashboards backend.</span>
       </div>
       <div className="toolbar">
+        <RangeSelect value={range} onChange={setRange} label="Time range for session queries" />
         {PRESETS.map((p) => (
-          <button key={p.label} className="btn ghost" onClick={() => { setMethod(p.method); setPath(p.path); setBody(p.body); setOut(''); setStatus(null) }}>
+          <button key={p.label} className="btn ghost" onClick={() => { setMethod(p.method); setPath(p.path); setBody(withRange(p.body)); setOut(''); setStatus(null) }}>
             {p.label}
           </button>
         ))}

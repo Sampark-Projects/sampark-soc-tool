@@ -1,13 +1,16 @@
 import { useCallback, useEffect, useState } from 'react'
 import { formatBytes, getJSON, pick } from '../api'
 import PageHero from '../components/PageHero'
+import RangeSelect from '../components/RangeSelect'
+import { inRange } from '../lib/query'
 
 // Arkime capture-node statistics: GET /arkime/api/stats. Field names vary by Arkime version,
 // so each column tries several keys.
 const num = (v: unknown) => (v == null || v === '' ? '—' : Number(v).toLocaleString())
 
 export default function Statistics() {
-  const [rows, setRows] = useState<any[]>([])
+  const [all, setRows] = useState<any[]>([])
+  const [range, setRange] = useState('all')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [auto, setAuto] = useState(true)
@@ -30,6 +33,7 @@ export default function Statistics() {
     return () => clearInterval(t)
   }, [load, auto])
 
+  const rows = all.filter((r) => inRange(pick(r, ['currentTime']), range))
   const totalSessions = rows.reduce((a, r) => a + (Number(pick(r, ['totalSessions'])) || 0), 0)
   const totalPackets = rows.reduce((a, r) => a + (Number(pick(r, ['totalPackets'])) || 0), 0)
 
@@ -38,6 +42,7 @@ export default function Statistics() {
   return (
     <>
       <PageHero icon="📈" title="Statistics" sub="Capture-node health: sessions, packet rates, drops and free disk space." href="/arkime/stats" linkLabel="Open PCAP & Indexing Stats ↗">
+        <RangeSelect value={range} onChange={setRange} label="Nodes reported within" />
         <label className="muted small">
           <input type="checkbox" checked={auto} onChange={(e) => setAuto(e.target.checked)} /> Auto-refresh (15 s)
         </label>
