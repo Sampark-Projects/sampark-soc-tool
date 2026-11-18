@@ -51,7 +51,7 @@ function SavedObjects({ type }: { type: 'dashboard' | 'visualization' | 'search'
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [range, setRange] = useState('1h')
+  const [range, setRange] = useState('7d')
 
   useEffect(() => setPage(1), [type, search, range])
   useEffect(() => {
@@ -263,7 +263,7 @@ const PLUGIN: Record<string, { path: string; body?: unknown; rows: (j: any) => P
 function PluginList({ kind }: { kind: 'monitors' | 'detectors' | 'channels' | 'alerts' }) {
   const [all, setRows] = useState<PluginRow[] | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [range, setRange] = useState('1h')
+  const [range, setRange] = useState('7d')
   const rows = useMemo(() => (all ? all.filter((r) => inRange(r.ts, range)) : null), [all, range])
   useEffect(() => {
     let alive = true

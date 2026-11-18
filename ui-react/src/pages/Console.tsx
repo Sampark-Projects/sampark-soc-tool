@@ -23,7 +23,7 @@ export default function Console() {
   const [status, setStatus] = useState<number | null>(null)
   const [busy, setBusy] = useState(false)
   const [ms, setMs] = useState<number | null>(null)
-  const [range, setRange] = useState('1h')
+  const [range, setRange] = useState('7d')
   // presets that read sessions follow the chosen time range
   const withRange = (b: string) => {
     const r = resolveRange(range)

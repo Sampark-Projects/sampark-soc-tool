@@ -13,7 +13,7 @@ import PageHero from '../components/PageHero'
 const DEFAULT_COLUMNS = ['event.provider', 'event.dataset', 'source.ip', 'destination.ip', 'network.protocol']
 
 export default function Explorer() {
-  const [range, setRange] = useState('1h')
+  const [range, setRange] = useState('7d')
   const [filters, setFilters] = useState<Filters>({})
   const [params] = useSearchParams()
   const [columns, setColumns] = useState<string[]>(() => {
@@ -45,6 +45,18 @@ export default function Explorer() {
       .sort()
       .slice(0, 300)
   }, [fields, fieldQuery])
+
+  // The long field list is split by the first part of the name (source, destination, zeek, ...); a group opens when clicked.
+  const [openGroups, setOpenGroups] = useState<Set<string>>(new Set())
+  const toggleGroup = useCallback((g: string) => setOpenGroups((o) => { const n = new Set(o); if (n.has(g)) n.delete(g); else n.add(g); return n }), [])
+  const fieldGroups = useMemo(() => {
+    const m = new Map<string, string[]>()
+    for (const n of names) {
+      const g = n.includes('.') ? n.slice(0, n.indexOf('.')) : 'general'
+      m.set(g, [...(m.get(g) ?? []), n])
+    }
+    return [...m.entries()].sort((a, b) => a[0].localeCompare(b[0]))
+  }, [names])
 
   // Top values of the selected field under the current filters.
   useEffect(() => {
@@ -127,19 +139,33 @@ export default function Explorer() {
           <h3>Fields</h3>
           <input value={fieldQuery} onChange={(e) => setFieldQuery(e.target.value)} placeholder="Filter fields" aria-label="Filter fields" style={{ width: '100%' }} />
           {fieldError && <p className="err small">Could not load fields: {fieldError}</p>}
-          <ul className="field-list">
-            {columns.length > 0 && <li className="muted small">Selected: {columns.length}</li>}
-            {names.map((n) => (
-              <li key={n} className={n === active ? 'active' : ''}>
-                <button className="link" onClick={() => setActive(n === active ? null : n)} title={fields[n]?.description ?? ''}>
-                  {n}
+          {columns.length > 0 && <p className="muted small">Selected: {columns.length}</p>}
+          {fieldGroups.map(([group, list]) => {
+            const open = !!fieldQuery.trim() || openGroups.has(group) || list.includes(active ?? '') || list.some((n) => columns.includes(n))
+            return (
+              <div className="nav-group lvl1" key={group}>
+                <button type="button" className="nav-toggle" aria-expanded={open} onClick={() => toggleGroup(group)}>
+                  <span className="nav-caret" aria-hidden="true">{open ? '▾' : '▸'}</span>
+                  <span className="nav-label">{group}</span>
+                  <span className="nav-count">{list.length}</span>
                 </button>
-                <button className="link" onClick={() => toggleColumn(n)} title={columns.includes(n) ? 'Remove column' : 'Add column'}>
-                  {columns.includes(n) ? '✓' : '+'}
-                </button>
-              </li>
-            ))}
-          </ul>
+                {open && (
+                  <ul className="field-list">
+                    {list.map((n) => (
+                      <li key={n} className={n === active ? 'active' : ''}>
+                        <button className="link" onClick={() => setActive(n === active ? null : n)} title={fields[n]?.description ?? ''}>
+                          {n}
+                        </button>
+                        <button className="link" onClick={() => toggleColumn(n)} title={columns.includes(n) ? 'Remove column' : 'Add column'}>
+                          {columns.includes(n) ? '✓' : '+'}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )
+          })}
         </aside>
 
         <div>

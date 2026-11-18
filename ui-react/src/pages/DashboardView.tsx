@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import EventTable from '../components/EventTable'
 import PanelView from '../components/PanelView'
@@ -11,26 +11,80 @@ const ACCENT: Record<string, string> = { General: '#38bdf8', Protocols: '#34d399
 // Left navigation in the same order as the original dashboards' Navigation panel.
 const GENERAL_ORDER = ['Overview', 'Security Overview', 'ICS/IoT Security Overview', 'Severity', 'Connections', 'IP Connections Tree', 'Multicast', 'Biomes', 'Actions and Results', 'Threat Intelligence', 'Files', 'File Scanning', 'File Tree', 'Executables', 'Software', 'Zeek Known Summary', 'Zeek Notices', 'Zeek Weird', 'Zeek Signatures', 'Suricata Alerts', 'Asset Interaction Analysis']
 const byTitle = (a: DashboardDef, b: DashboardDef) => a.title.localeCompare(b.title)
-const NAV = (() => {
+// Section names used to split the long lists into smaller groups that open when clicked.
+const GENERAL_SECTIONS: [string, string[]][] = [
+  ['Overview', ['Overview', 'Security Overview', 'ICS/IoT Security Overview', 'Severity']],
+  ['Network', ['Connections', 'IP Connections Tree', 'Multicast', 'Biomes', 'Actions and Results', 'Asset Interaction Analysis']],
+  ['Threats and alerts', ['Threat Intelligence', 'Suricata Alerts', 'Zeek Notices', 'Zeek Weird', 'Zeek Signatures']],
+  ['Files', ['Files', 'File Scanning', 'File Tree', 'Executables']],
+  ['Inventory', ['Software', 'Zeek Known Summary']],
+]
+const PROTOCOL_SECTIONS: [string, string[]][] = [
+  ['Web and remote access', ['HTTP', 'WebSocket', 'SSH', 'Telnet, rlogin and rsh', 'RDP', 'RFB', 'FTP', 'TFTP', 'SIP', 'IRC', 'SMTP', 'QUIC', 'Tunnels', 'STUN']],
+  ['Sign-in and certificates', ['LDAP', 'Kerberos', 'NTLM', 'RADIUS', 'SSL', 'X.509']],
+  ['Databases', ['MySQL', 'PostgreSQL', 'Redis', 'Tabular Data Stream', 'Tabular Data Stream - RPC', 'Tabular Data Stream - SQL']],
+  ['Network services', ['DNS', 'DHCP', 'NTP', 'SNMP', 'OSPF', 'Syslog', 'SMB', 'DCE/RPC', 'MQTT']],
+]
+interface NavSection { label: string; items: DashboardDef[] }
+interface NavGroupDef { label: string; sections: NavSection[] }
+const NAV: NavGroupDef[] = (() => {
   const all = catalog.dashboards
-  const general = GENERAL_ORDER.map((t) => all.find((d) => d.title === t)).filter((d): d is DashboardDef => !!d)
-  const used = new Set(general.map((d) => d.id))
+  const used = new Set<string>()
+  const split = (defs: [string, string[]][], pool: DashboardDef[]): NavSection[] => {
+    const out: NavSection[] = defs
+      .map(([label, titles]) => ({ label, items: titles.map((t) => pool.find((d) => d.title === t)).filter((d): d is DashboardDef => !!d) }))
+      .filter((x) => x.items.length)
+    out.forEach((x) => x.items.forEach((d) => used.add(d.id)))
+    const left = pool.filter((d) => !used.has(d.id)).sort(byTitle)
+    if (left.length) out.push({ label: 'More', items: left })
+    left.forEach((d) => used.add(d.id))
+    return out
+  }
+  const generalPool = all.filter((d) => GENERAL_ORDER.includes(d.title))
+  const general = split(GENERAL_SECTIONS, generalPool)
+  const proto = split(PROTOCOL_SECTIONS, all.filter((d) => d.group === 'Protocols'))
   const rest = all.filter((d) => !used.has(d.id))
   return [
-    { label: 'General Network Logs', items: general },
-    { label: 'Common Protocols', items: rest.filter((d) => d.group === 'Protocols').sort(byTitle) },
-    { label: 'ICS/IoT Protocols', items: rest.filter((d) => d.group === 'ICS/IoT').sort(byTitle) },
-    { label: 'Other', items: rest.filter((d) => d.group !== 'Protocols' && d.group !== 'ICS/IoT').sort(byTitle) },
-  ].filter((g) => g.items.length)
+    { label: 'General Network Logs', sections: general },
+    { label: 'Common Protocols', sections: proto },
+    { label: 'ICS/IoT Protocols', sections: [{ label: '', items: rest.filter((d) => d.group === 'ICS/IoT').sort(byTitle) }] },
+    { label: 'Other', sections: [{ label: '', items: rest.filter((d) => d.group !== 'ICS/IoT').sort(byTitle) }] },
+  ].filter((g) => g.sections.some((x) => x.items.length))
 })()
+
+// one group of the left list: its title is a button, its items only show while it is open
+function NavToggle({ id, label, count, open, onToggle, level = 1, children }: { id: string; label: string; count: number; open: boolean; onToggle: (id: string) => void; level?: 1 | 2; children: ReactNode }) {
+  return (
+    <div className={`nav-group lvl${level}`}>
+      <button type="button" className="nav-toggle" aria-expanded={open} onClick={() => onToggle(id)}>
+        <span className="nav-caret" aria-hidden="true">{open ? '▾' : '▸'}</span>
+        <span className="nav-label">{label}</span>
+        <span className="nav-count">{count}</span>
+      </button>
+      {open && children}
+    </div>
+  )
+}
 
 export default function DashboardView({ def }: { def?: DashboardDef }) {
   const { slug } = useParams()
   const dash = def ?? findDashboard(slug)
-  const [range, setRange] = useState('1h')
+  const [range, setRange] = useState('7d')
   const [user, setUser] = useState<Filters>({})
   const [refreshKey, setRefreshKey] = useState(0)
   const [every, setEvery] = useState(0) // auto-refresh seconds (0 = off)
+  // which left-list groups are open: the one holding the dashboard on screen always opens, others open when clicked
+  const [openNav, setOpenNav] = useState<Set<string>>(new Set())
+  const toggleNav = useCallback((id: string) => setOpenNav((o) => { const n = new Set(o); if (n.has(id)) n.delete(id); else n.add(id); return n }), [])
+  const activeId = def?.id ?? findDashboard(slug)?.id
+  useEffect(() => {
+    if (!activeId) return
+    setOpenNav((o) => {
+      const n = new Set(o)
+      NAV.forEach((g) => g.sections.forEach((sec) => { if (sec.items.some((d) => d.id === activeId)) { n.add(g.label); if (sec.label) n.add(`${g.label}/${sec.label}`) } }))
+      return n
+    })
+  }, [activeId])
   useEffect(() => {
     if (!every) return
     const t = setInterval(() => setRefreshKey((k) => k + 1), every * 1000)
@@ -79,17 +133,27 @@ export default function DashboardView({ def }: { def?: DashboardDef }) {
     <div className="dash-layout">
       <aside className="dash-nav" aria-label="Dashboards">
         <h3>Navigation</h3>
-        {NAV.map(({ label, items }) => (
-          <div key={label}>
-            <h4>{label}</h4>
-            <ul>
-              {items.map((d) => (
-                <li key={d.id}>
-                  <Link to={`/dashboards/${d.slug}`} className={d.id === dash.id ? 'active' : ''}>{d.title}</Link>
-                </li>
-              ))}
-            </ul>
-          </div>
+        {NAV.map((g) => (
+          <NavToggle key={g.label} id={g.label} label={g.label} count={g.sections.reduce((n, x) => n + x.items.length, 0)} open={openNav.has(g.label)} onToggle={toggleNav}>
+            {g.sections.map((sec) => {
+              const list = (
+                <ul>
+                  {sec.items.map((d) => (
+                    <li key={d.id}>
+                      <Link to={`/dashboards/${d.slug}`} className={d.id === dash?.id ? 'active' : ''}>{d.title}</Link>
+                    </li>
+                  ))}
+                </ul>
+              )
+              return sec.label ? (
+                <NavToggle key={sec.label} id={`${g.label}/${sec.label}`} label={sec.label} count={sec.items.length} open={openNav.has(`${g.label}/${sec.label}`)} onToggle={toggleNav} level={2}>
+                  {list}
+                </NavToggle>
+              ) : (
+                <div key="all">{list}</div>
+              )
+            })}
+          </NavToggle>
         ))}
       </aside>
       <div className="dash-main" style={{ ['--dc' as any]: accent }}>

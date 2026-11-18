@@ -34,7 +34,7 @@ export default function Status() {
   const [ingest, setIngest] = useState<Res<{ sources: Record<string, string>; latest_ingest_age_seconds?: number }>>({})
   const [indices, setIndices] = useState<Res<{ indices: any[] }>>({})
   const [loading, setLoading] = useState(true)
-  const [range, setRange] = useState('1h')
+  const [range, setRange] = useState('7d')
 
   const load = useCallback(async () => {
     setLoading(true)

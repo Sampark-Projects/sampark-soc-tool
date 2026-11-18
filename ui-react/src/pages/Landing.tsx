@@ -66,7 +66,7 @@ function buildTiles(c: AppConfig): Tile[] {
 
 export default function Landing() {
   const [config, setConfig] = useState<AppConfig>(defaultConfig)
-  const [range, setRange] = useState('1h')
+  const [range, setRange] = useState('7d')
   const [total, setTotal] = useState<number | null>(null)
   const [top, setTop] = useState<{ k: string; n: number }[]>([])
   useEffect(() => {

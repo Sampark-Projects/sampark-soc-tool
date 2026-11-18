@@ -25,7 +25,7 @@ function NewHunt({ onCreated, onClose }: { onCreated: () => void; onClose: () =>
   const [src, setSrc] = useState(true)
   const [dst, setDst] = useState(true)
   const [size, setSize] = useState(50)
-  const [huntRange, setHuntRange] = useState('1h')
+  const [huntRange, setHuntRange] = useState('7d')
   const [expression, setExpression] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -136,7 +136,7 @@ function NewHunt({ onCreated, onClose }: { onCreated: () => void; onClose: () =>
 
 export default function Hunts() {
   const [all, setRows] = useState<any[]>([])
-  const [listRange, setListRange] = useState('1h')
+  const [listRange, setListRange] = useState('7d')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)

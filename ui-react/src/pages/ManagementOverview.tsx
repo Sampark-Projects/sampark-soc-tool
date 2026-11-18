@@ -161,7 +161,7 @@ export default function Overview({ onTab }: { onTab: (t: any) => void }) {
   const [datasets, setDatasets] = useState<{ label: string; value: number }[]>([])
   const [plug, setPlug] = useState<{ monitors: any[]; detectors: number; channels: number; alerts: number } | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [range, setRange] = useState('1h')
+  const [range, setRange] = useState('7d')
 
   useEffect(() => {
     let alive = true

@@ -80,7 +80,7 @@ function layout(edges: Edge[], sides: Map<string, 'a' | 'b' | 'both'>): Node[] {
 export default function Connections() {
   const [params] = useSearchParams()
   const [pair, setPair] = useState(PAIRS[0])
-  const [range, setRange] = useState(DATE_TO_RANGE[params.get('date') ?? ''] ?? '1h')
+  const [range, setRange] = useState(DATE_TO_RANGE[params.get('date') ?? ''] ?? '7d')
   const [protocol, setProtocol] = useState('')
   const [limit, setLimit] = useState(40)
   const [minConn, setMinConn] = useState(1)

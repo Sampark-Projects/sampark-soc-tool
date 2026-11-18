@@ -65,7 +65,7 @@ export default function Sessions() {
   const [rows, setRows] = useState<Row[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(0)
-  const [range, setRange] = useState('1h')
+  const [range, setRange] = useState('7d')
   const [params] = useSearchParams()
   const initial = params.get('expression') ?? ''
   const [expression, setExpression] = useState(initial)

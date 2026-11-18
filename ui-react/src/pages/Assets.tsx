@@ -86,7 +86,7 @@ export default function Assets() {
   const [applied, setApplied] = useState(params.get('q') ?? '')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [range, setRange] = useState('1h')
+  const [range, setRange] = useState('7d')
 
   const load = useCallback(async () => {
     setLoading(true)

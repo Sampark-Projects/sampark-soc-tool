@@ -17,7 +17,7 @@ const GROUPS: Record<string, string[]> = {
 interface State { b: Bucket[] | null; err?: string }
 
 export default function Spiview() {
-  const [range, setRange] = useState('1h')
+  const [range, setRange] = useState('7d')
   const [filters, setFilters] = useState<Filters>({})
   const [group, setGroup] = useState('General')
   const [data, setData] = useState<Record<string, State>>({})
